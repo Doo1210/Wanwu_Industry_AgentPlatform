@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>事件记录</title>
+  <!-- 引入 Element Plus CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css" />
+  <style>
+    body {
+      margin: 0;
+      background-color: #f5f7fa;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    #app {
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      box-sizing: border-box;
+    }
+    
+    /* 顶部标题 */
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      flex-shrink: 0;
+    }
+    .page-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #303133;
+      margin: 0;
+    }
+
+    /* 主卡片容器 */
+    .main-card {
+      background: #fff;
+      border: 1px solid #e4e7ed;
+      border-radius: 4px;
+      padding: 20px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    
+    .tab-content-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* 分页栏 */
+    .page-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 0;
+      flex-shrink: 0;
+    }
+
+    /* 筛选区 */
+    .filter-bar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .filter-bar .el-date-editor {
+      max-width: 320px !important;
+    }
+    
+    /* 表格基础定制 */
+    .el-table {
+      --el-table-header-bg-color: #f8f9fb;
+      --el-table-header-text-color: #606266;
+      font-size: 13px;
+    }
+    .el-table th.el-table__cell {
+      font-weight: 600;
+      padding: 12px 0;
+    }
+    
+    /* 标签与徽标定制 */
+    .custom-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    .tag-pulsar { color: #409eff; background: #ecf5ff; border: 1px solid #d9ecff; }
+    .tag-timer { color: #909399; background: #f4f4f5; border: 1px solid #e9e9eb; }
+    
+    .engine-badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 2px;
+      font-size: 12px;
+      transform: scale(0.9);
+      margin-right: 4px;
+    }
+    .engine-rule { background: #e1f3d8; color: #67c23a; }
+    .engine-agent-deep { background: #f4f4f5; color: #902bd0; border: 1px solid #e9e9eb; }
+
+    /* 统计数字高亮 */
+    .stat-number { font-weight: 600; font-family: monospace; font-size: 14px; }
+    .text-danger { color: #f56c6c; }
+    .text-warning { color: #e6a23c; }
+    .text-primary { color: #409eff; }
+    .text-success { color: #67c23a; }
+
+    /* 链接按钮 */
+    .action-links .el-button { font-weight: 400; padding: 0 4px; }
+    
+    .pagination-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 20px;
+      color: #606266;
+      font-size: 13px;
+    }
+
+    /* 抽屉控制台样式 */
+    .drawer-console {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    .console-body {
+      flex: 1;
+      overflow-y: auto;
+      background: #1e1e1e;
+      padding: 12px 16px;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+    .console-body::-webkit-scrollbar { width: 6px; }
+    .console-body::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
+    .log-line { margin-bottom: 2px; color: #fff; }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="page-header">
+      <h1 class="page-title">事件记录</h1>
+    </div>
+
+    <!-- 顶部分页 Tab -->
+    <el-tabs v-model="activeTab" style="margin-bottom: 15px;" @tab-click="handleTabClick">
+      <el-tab-pane label="事件执行明细" name="list"></el-tab-pane>
+      <el-tab-pane label="事件处理统计" name="stats"></el-tab-pane>
+    </el-tabs>
+
+    <div class="main-card">
+      
+      <!-- ==================== 视图一：事件执行明细 ==================== -->
+      <div v-show="activeTab === 'list'" class="tab-content-wrapper">
+        
+        <!-- 明细专属筛选区 -->
+        <div class="filter-bar" style="flex-shrink:0">
+          <el-input v-model="searchQuery" placeholder="搜索 Event ID 或 事件名称..." prefix-icon="Search" style="width: 280px;" clearable></el-input>
+          
+          <el-select v-model="filterStatus" placeholder="执行状态" style="width: 140px;" clearable>
+            <el-option label="执行成功" value="success"></el-option>
+            <el-option label="执行失败" value="fail"></el-option>
+            <el-option label="安全拦截" value="block"></el-option>
+          </el-select>
+          
+          <el-date-picker type="datetimerange" range-separator="至" start-placeholder="开始时间" end-placeholder="结束时间" style="width: 220px;"></el-date-picker>
+        </div>
+
+        <!-- 明细表格 -->
+        <el-table :data="filteredTableData" style="width: 100%; flex: 1;" :max-height="undefined">
+          <el-table-column prop="eventId" label="Event ID" width="200">
+            <template #default="scope">
+              <span style="font-family: monospace; color: #606266;">{{ scope.row.eventId }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="time" label="触发时间" width="160"></el-table-column>
+          <el-table-column prop="eventName" label="事件名称" width="200">
+            <template #default="scope">
+              <div style="font-weight: 500; color: #303133;">{{ scope.row.eventName }}</div>
+            </template>
+          </el-table-column>
+          <el-table-column label="事件智能体" width="160">
+            <template #default="scope">
+              <el-button type="primary" link v-if="scope.row.agent">
+                <el-icon style="margin-right:4px;"><Cpu /></el-icon>{{ scope.row.agent }}
+              </el-button>
+              <span v-else style="color: #c0c4cc;">未绑定</span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="action" label="已执行动作" width="200">
+            <template #default="scope">
+              <span style="color: #606266;">{{ scope.row.action }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="执行状态" width="100">
+            <template #default="scope">
+              <el-tag :type="scope.row.statusType" size="small" effect="light" round>
+                {{ scope.row.statusText }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="duration" label="耗时" width="80"></el-table-column>
+          <el-table-column label="操作" fixed="right" min-width="120" class-name="action-links">
+            <template #default="scope">
+              <el-button type="primary" link @click="openDrawer(scope.row)">执行详情</el-button>
+              <el-button type="primary" link style="color:#909399;" @click="reExecute(scope.row)">重新执行</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+
+        <!-- 分页栏 -->
+        <div class="page-footer" style="border-top: 1px solid #ebeef5; margin-top: 16px;">
+          <span style="font-size: 13px; color: #909399;">共 {{ filteredTableData.length }} 条记录</span>
+          <div style="display: flex; align-items: center; gap: 4px;">
+            <button style="width: 28px; height: 28px; border: 1px solid #dcdfe6; background: #fff; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #909399; font-size: 13px;">
+              <span>&lt;</span>
+            </button>
+            <button style="width: 28px; height: 28px; border: 1px solid #409eff; background: #409eff; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #fff; font-size: 13px; font-weight: 600;">1</button>
+            <button style="width: 28px; height: 28px; border: 1px solid #dcdfe6; background: #fff; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #909399; font-size: 13px;">
+              <span>&gt;</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== 视图二：事件处理统计 ==================== -->
+      <div v-show="activeTab === 'stats'" class="tab-content-wrapper">
+        
+        <!-- 统计专属筛选区 -->
+        <div class="filter-bar" style="flex-shrink:0">
+          <el-input v-model="statsSearch" placeholder="搜索事件名称..." prefix-icon="Search" style="width: 240px;" clearable></el-input>
+          <el-select v-model="filterActiveStatus" placeholder="启停状态" style="width: 140px;" clearable>
+            <el-option label="已启用" value="active"></el-option>
+            <el-option label="已停用" value="inactive"></el-option>
+          </el-select>
+        </div>
+
+        <!-- 统计表格 -->
+        <el-table :data="filteredStatsData" style="width: 100%; flex: 1;" :max-height="undefined" border>
+          <el-table-column label="事件名称" width="200" fixed>
+            <template #default="scope">
+              <div style="font-weight: 500; color: #303133;">
+                {{ scope.row.eventName }}
+              </div>
+            </template>
+          </el-table-column>
+          
+          <el-table-column label="当前状态" width="100" align="center">
+            <template #default="scope">
+              <span v-if="scope.row.active" style="color: #67c23a; font-size: 13px;">🟢 已启用</span>
+              <span v-else style="color: #909399; font-size: 13px;">⚪ 已停用</span>
+            </template>
+          </el-table-column>
+
+          <el-table-column label="事件智能体" width="160">
+            <template #default="scope">
+              <el-button type="primary" link v-if="scope.row.agent">
+                <el-icon style="margin-right:4px;"><Cpu /></el-icon>{{ scope.row.agent }}
+              </el-button>
+              <span v-else style="color: #c0c4cc;">未绑定</span>
+            </template>
+          </el-table-column>
+
+          <el-table-column label="总触发次数" align="right" width="120">
+            <template #default="scope">
+              <span class="stat-number">{{ scope.row.total }}</span>
+            </template>
+          </el-table-column>
+
+          <el-table-column label="成功执行次数（率）" align="right" width="160">
+            <template #default="scope">
+              <span class="stat-number text-success">{{ scope.row.success }}</span>
+              <span style="color: #909399; font-size: 12px; margin-left: 4px;">({{ scope.row.successRate }})</span>
+            </template>
+          </el-table-column>
+
+          <el-table-column label="异常报错次数" align="right" width="120">
+            <template #default="scope">
+              <span class="stat-number text-danger" v-if="scope.row.fail > 0">{{ scope.row.fail }}</span>
+              <span v-else class="stat-number" style="color: #c0c4cc;">0</span>
+            </template>
+          </el-table-column>
+
+          <el-table-column label="安全拦截次数" align="right" width="120">
+            <template #default="scope">
+              <span class="stat-number text-warning" v-if="scope.row.block > 0">{{ scope.row.block }}</span>
+              <span v-else class="stat-number" style="color: #c0c4cc;">0</span>
+            </template>
+          </el-table-column>
+
+          <el-table-column label="操作" fixed="right" min-width="160" class-name="action-links">
+            <template #default="scope">
+              <el-button type="primary" link @click="openActionStats(scope.row)">执行动作统计</el-button>
+              <el-button type="primary" link @click="openExecutionDetail(scope.row)">事件执行明细</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+
+        <div class="page-footer" style="border-top: 1px solid #ebeef5; margin-top: 16px;">
+          <span style="font-size: 13px; color: #909399;">共 {{ filteredStatsData.length }} 个事件</span>
+          <div style="display: flex; align-items: center; gap: 4px;">
+            <button style="width: 28px; height: 28px; border: 1px solid #dcdfe6; background: #fff; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #909399; font-size: 13px;">
+              <span>&lt;</span>
+            </button>
+            <button style="width: 28px; height: 28px; border: 1px solid #409eff; background: #409eff; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #fff; font-size: 13px; font-weight: 600;">1</button>
+            <button style="width: 28px; height: 28px; border: 1px solid #dcdfe6; background: #fff; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #909399; font-size: 13px;">
+              <span>&gt;</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- 侧边追踪详情抽屉 -->
+    <el-drawer v-model="drawerVisible" :title="`执行详情 (${currentEvent.eventId})`" size="55%">
+      <div class="drawer-console">
+        <div class="console-body">
+          <div class="log-line" v-for="(log, idx) in executionLogs" :key="idx" v-html="log.html" :class="log.colorClass"></div>
+        </div>
+      </div>
+    </el-drawer>
+
+    <!-- 执行动作统计侧边栏 -->
+    <el-drawer v-model="actionStatsVisible" :title="`执行动作统计 (${currentActionStats.eventName})`" size="900px">
+      <div style="padding: 16px 20px;">
+        <el-table :data="actionStatsFlatData" style="width: 100%" border :span-method="actionStatsSpanMethod">
+          <el-table-column prop="engine" label="处理方式" width="100">
+            <template #default="scope">
+              <span v-if="scope.row.engine === '规则引擎'" style="color: #67c23a; font-weight: 600;">规则引擎</span>
+              <span v-else-if="scope.row.engine === '自适应引擎'" style="color: #409eff; font-weight: 600;">自适应引擎</span>
+              <span v-else style="color: #909399;">终止并记录</span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="method" label="规则/智能体" width="130">
+            <template #default="scope">
+              <span style="color: #303133;">{{ scope.row.method }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="action" label="执行动作" width="160">
+            <template #default="scope">
+              <span style="color: #606266;">{{ scope.row.action }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="successCount" label="成功执行次数" width="120" align="right">
+            <template #default="scope">
+              <span class="stat-number text-success">{{ scope.row.successCount }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="failCount" label="异常报错次数" width="120" align="right">
+            <template #default="scope">
+              <span class="stat-number text-danger">{{ scope.row.failCount }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="blockCount" label="安全拦截次数" width="120" align="right">
+            <template #default="scope">
+              <span class="stat-number text-warning">{{ scope.row.blockCount }}</span>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+    </el-drawer>
+
+  </div>
+
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://unpkg.com/element-plus"></script>
+  <script src="https://unpkg.com/@element-plus/icons-vue"></script>
+  
+  <script>
+    const { createApp, ref, computed } = Vue;
+
+    const app = createApp({
+      setup() {
+        const activeTab = ref('list');
+        const searchQuery = ref('');
+        const filterStatus = ref('');
+        const drawerVisible = ref(false);
+        const currentEvent = ref({});
+        const executionLogs = ref([]);
+
+        // 视图二状态
+        const statsSearch = ref('');
+        const filterActiveStatus = ref('');
+
+        // 执行动作统计状态
+        const actionStatsVisible = ref(false);
+        const currentActionStats = ref({});
+        const actionStatsFlatData = ref([]);
+
+        const actionStatsSpanMethod = ({ row, column, rowIndex, columnIndex }) => {
+          if (columnIndex === 0) {
+            const engine = row.engine;
+            let span = 1;
+            for (let i = rowIndex + 1; i < actionStatsFlatData.value.length; i++) {
+              if (actionStatsFlatData.value[i].engine === engine) {
+                span++;
+              } else {
+                break;
+              }
+            }
+            const prevEngine = rowIndex > 0 ? actionStatsFlatData.value[rowIndex - 1].engine : null;
+            if (engine === prevEngine) {
+              return { rowspan: 0, colspan: 0 };
+            }
+            return { rowspan: span, colspan: 1 };
+          }
+          if (columnIndex === 1) {
+            const method = row.method;
+            let span = 1;
+            for (let i = rowIndex + 1; i < actionStatsFlatData.value.length; i++) {
+              if (actionStatsFlatData.value[i].method === method && actionStatsFlatData.value[i].engine === row.engine) {
+                span++;
+              } else {
+                break;
+              }
+            }
+            const prevMethod = rowIndex > 0 ? actionStatsFlatData.value[rowIndex - 1].method : null;
+            if (method === prevMethod && row.engine === actionStatsFlatData.value[rowIndex - 1].engine) {
+              return { rowspan: 0, colspan: 0 };
+            }
+            return { rowspan: span, colspan: 1 };
+          }
+          return { rowspan: 1, colspan: 1 };
+        };
+
+        const openDrawer = (row) => {
+          drawerVisible.value = true;
+          currentEvent.value = row;
+          executionLogs.value = [
+            { html: `<span style="color:#fff;">14:32:05</span> <span style="color:#4ade80;font-weight:bold;">【事件触发】</span>`, colorClass: 'text-slate-300' },
+            { html: `&nbsp;&nbsp;&nbsp;&nbsp;• 接收到 <span style="color:#fde68a;font-weight:bold;border:1px solid #fde68a44;padding:1px 4px;border-radius:3px;font-size:11px;">${row.eventName}</span> 事件数据`, colorClass: 'text-slate-400' },
+            { html: `<span style="color:#fff;">14:32:05</span> <span style="color:#4ade80;font-weight:bold;">【事件分发】</span>`, colorClass: 'text-slate-300' },
+            { html: `&nbsp;&nbsp;&nbsp;&nbsp;• 命中条件，事件分发至 <span style="color:#93c5fd;font-weight:bold;border:1px solid #93c5fd44;padding:1px 4px;border-radius:3px;font-size:11px;">规则引擎</span> <span style="color:#c4b5fd;font-weight:bold;border:1px solid #c4b5fd44;padding:1px 4px;border-radius:3px;font-size:11px;">自适应引擎</span>`, colorClass: 'text-slate-400' },
+            { html: `<span style="color:#fff;">14:32:06</span> <span style="color:#4ade80;font-weight:bold;">【事件处理】</span>`, colorClass: 'text-slate-300' },
+            { html: `&nbsp;&nbsp;&nbsp;&nbsp;• <span style="color:#fff;">14:32:06.800</span> 规则 <span style="color:#67e8f9;font-weight:bold;border:1px solid #67e8f944;padding:1px 4px;border-radius:3px;font-size:11px;">自动生成分析工单</span> 执行动作 <span style="color:#fdba74;font-weight:bold;border:1px solid #fdba7444;padding:1px 4px;border-radius:3px;font-size:11px;">查询历史数据</span>`, colorClass: 'text-slate-400' },
+            { html: `&nbsp;&nbsp;&nbsp;&nbsp;• <span style="color:#fff;">14:32:07.500</span> 规则 <span style="color:#67e8f9;font-weight:bold;border:1px solid #67e8f944;padding:1px 4px;border-radius:3px;font-size:11px;">自动生成分析工单</span> 执行动作 <span style="color:#fdba74;font-weight:bold;border:1px solid #fdba7444;padding:1px 4px;border-radius:3px;font-size:11px;">诊断分析</span>`, colorClass: 'text-slate-400' },
+            { html: `&nbsp;&nbsp;&nbsp;&nbsp;• <span style="color:#fff;">14:32:08.200</span> 智能体 <span style="color:#a78bfa;font-weight:bold;border:1px solid #a78bfa44;padding:1px 4px;border-radius:3px;font-size:11px;">${row.agent || '设备诊断专家'}</span> 执行动作 <span style="color:#fdba74;font-weight:bold;border:1px solid #fdba7444;padding:1px 4px;border-radius:3px;font-size:11px;">发送告警</span>`, colorClass: 'text-slate-400' },
+            { html: `<span style="color:#fff;">14:32:08</span> <span style="color:#4ade80;font-weight:bold;">【执行完毕】</span>`, colorClass: 'text-slate-300' },
+          ];
+        };
+        const reExecute = (row) => { console.log('重新执行', row.eventId); };
+
+        // 视图一：明细流水 Mock 数据
+        const tableData = ref([
+          { eventId: 'EVT-20240515-001', time: '2026-05-06 14:32:05', eventName: '电表电压过高告警订阅', agent: '设备诊断专家', action: '查询历史数据、诊断分析', statusType: 'warning', statusText: '安全拦截', duration: '3.4s' },
+          { eventId: 'EVT-20240515-002', time: '2026-05-06 14:30:00', eventName: '每日早班开机状态确认', agent: '能耗分析专家', action: '生成状态报告', statusType: 'success', statusText: '执行成功', duration: '45ms' },
+          { eventId: 'EVT-20240515-004', time: '2026-05-06 14:15:33', eventName: '温度异常波动检测', agent: '设备诊断专家', action: '异常诊断、发送告警', statusType: 'danger', statusText: '执行失败', duration: '12.1s' }
+        ]);
+
+        // 视图二：统计看板 Mock 数据
+        const statsData = ref([
+          { eventName: '电表电压过高告警订阅', agent: '设备诊断专家', active: true, total: 1250, success: 1230, successRate: '98.4%', fail: 5, block: 15 },
+          { eventName: '每日早班开机状态确认', agent: '能耗分析专家', active: true, total: 340, success: 340, successRate: '100%', fail: 0, block: 0 },
+          { eventName: '温度异常波动检测', agent: '排产调度Agent', active: false, total: 0, success: 0, successRate: '-', fail: 0, block: 0 }
+        ]);
+
+        // 计算属性：实现明细列表的过滤功能
+        const filteredTableData = computed(() => {
+          return tableData.value.filter(item => {
+            if (searchQuery.value) {
+              const query = searchQuery.value.toLowerCase();
+              const matchId = item.eventId.toLowerCase().includes(query);
+              const matchName = item.eventName.includes(searchQuery.value);
+              if (!matchId && !matchName) return false;
+            }
+            if (filterStatus.value && item.statusType !== filterStatus.value) return false;
+            return true;
+          });
+        });
+
+        // 计算属性：实现统计列表的过滤功能
+        const filteredStatsData = computed(() => {
+          return statsData.value.filter(item => {
+            if (statsSearch.value) {
+              if (!item.eventName.includes(statsSearch.value)) return false;
+            }
+            if (filterActiveStatus.value === 'active' && !item.active) return false;
+            if (filterActiveStatus.value === 'inactive' && item.active) return false;
+            return true;
+          });
+        });
+
+        const openActionStats = (row) => {
+           actionStatsVisible.value = true;
+           currentActionStats.value = row;
+           actionStatsFlatData.value = [
+             { engine: '规则引擎', method: '自动生成分析工单', action: '查询历史数据', successCount: 115, failCount: 3, blockCount: 2 },
+             { engine: '规则引擎', method: '自动生成分析工单', action: '诊断分析', successCount: 82, failCount: 2, blockCount: 1 },
+             { engine: '规则引擎', method: '安全阈值校验', action: '拦截违规操作', successCount: 0, failCount: 0, blockCount: 3 },
+             { engine: '规则引擎', method: '安全阈值校验', action: '记录异常日志', successCount: 0, failCount: 0, blockCount: 0 },
+             { engine: '自适应引擎', method: '设备诊断专家', action: '异常诊断', successCount: 40, failCount: 2, blockCount: 0 },
+             { engine: '自适应引擎', method: '设备诊断专家', action: '发送告警', successCount: 36, failCount: 1, blockCount: 1 },
+             { engine: '自适应引擎', method: '设备诊断专家', action: '生成报告', successCount: 0, failCount: 0, blockCount: 0 },
+             { engine: '终止并记录', method: '-', action: '-', successCount: 0, failCount: 0, blockCount: 0 }
+           ];
+         };
+        
+        const openExecutionDetail = (row) => {
+          activeTab.value = 'list';
+          searchQuery.value = row.eventName;
+        };
+
+        return {
+          activeTab,
+          searchQuery, filterStatus,
+          statsSearch, filterActiveStatus,
+          tableData, statsData, filteredTableData, filteredStatsData,
+          drawerVisible, currentEvent, executionLogs,
+          openDrawer,
+          reExecute,
+          actionStatsVisible, currentActionStats, actionStatsFlatData, actionStatsSpanMethod,
+          openActionStats,
+          openExecutionDetail
+        }
+      }
+    });
+
+    for (const [key, component] of Object.entries(ElementPlusIconsVue)) { app.component(key, component); }
+    app.use(ElementPlus);
+    app.mount('#app');
+  </script>
+</body>
+</html>
