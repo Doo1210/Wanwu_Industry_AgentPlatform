@@ -1,0 +1,1661 @@
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>事件智能体</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css">
+    <script src="https://unpkg.com/@element-plus/icons-vue"></script>
+    <script src="https://unpkg.com/element-plus"></script>
+    
+    <style type="text/tailwindcss">
+        body { font-family: "Inter", system-ui, sans-serif; color: #1f2937; margin: 0; padding: 0; }
+        [v-cloak] { display: none; }
+        
+        .atomic-item { @apply bg-white border border-gray-200 rounded-xl p-3 mb-3 shadow-sm hover:shadow-md transition-all duration-300; }
+        .step-badge { @apply w-7 h-7 bg-blue-600 text-white rounded-lg flex items-center justify-center font-black text-sm mr-4 shadow-md shrink-0; }
+        .label-cap { @apply text-[11px] font-bold text-slate-400 mb-2 block uppercase tracking-widest; }
+        .disabled-mask { @apply opacity-40 grayscale pointer-events-none select-none transition-all duration-300; }
+
+        /* 紧凑型分支卡片 */
+        .branch-card { @apply bg-white border border-gray-200 rounded-lg flex items-stretch mb-3 shadow-sm hover:border-blue-400 transition-colors overflow-hidden flex-col xl:flex-row; }
+        .branch-cond-area { @apply flex-1 p-4 flex flex-col justify-center bg-white; }
+        .branch-connector { @apply hidden xl:flex w-12 bg-gradient-to-r from-white to-gray-50 items-center justify-center border-l border-gray-50 text-gray-300; }
+        .branch-action-area { @apply xl:w-[260px] bg-gray-50 border-t xl:border-t-0 xl:border-l border-gray-200 p-4 flex flex-col justify-center relative; }
+        
+        /* 虚线添加槽 */
+        .dashed-add-slot { @apply border-2 border-dashed border-gray-300 rounded-lg p-3 flex justify-center items-center text-gray-400 font-bold text-sm hover:text-blue-500 hover:border-blue-400 hover:bg-blue-50 cursor-pointer transition-all mb-4; }
+
+        .cond-row { @apply flex items-center gap-2 mb-2 last:mb-0 flex-wrap; }
+        .compact-el .el-input__wrapper { @apply shadow-none border border-gray-200 bg-gray-50 hover:bg-white focus:bg-white; }
+        
+        /* 定制滚动条 */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        .console-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .console-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .console-scrollbar::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+        .console-scrollbar::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        
+        .el-dialog__header { @apply border-b border-gray-100 mr-0 pb-4; }
+
+        /* 新增：并行引擎的容器卡片 */
+        .engine-track { @apply flex-1 bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col transition-all duration-300 relative; }
+        
+        /* 执行动作触发器样式 */
+        .action-trigger-wrapper { position: relative; }
+        .action-trigger-input {
+            display: flex; align-items: center;
+            border: 1px solid #dcdfe6; border-radius: 6px;
+            background: #fff; transition: border-color 0.2s;
+            height: 38px; padding: 0 11px; cursor: pointer;
+        }
+        .action-trigger-input:hover { border-color: #c0c4cc; }
+        .action-trigger-input.is-focus { border-color: #409eff; box-shadow: 0 0 0 1px #409eff inset; }
+        .action-trigger-field {
+            flex: 1; border: none; outline: none; font-size: 14px;
+            color: #606266; background: transparent; cursor: pointer;
+        }
+        .action-trigger-field::placeholder { color: #a8abb2; }
+        .action-trigger-field[readonly] { color: #606266; }
+        .action-trigger-suffix {
+            display: flex; align-items: center; color: #a0aec0;
+            transition: transform 0.2s; font-size: 14px;
+        }
+        .action-trigger-input.is-focus .action-trigger-suffix { transform: rotate(180deg); color: #409eff; }
+        
+        /* 执行动作下拉面板样式 */
+        .action-dropdown-popover { padding: 0 !important; border-radius: 12px !important; overflow: hidden; border: 1px solid #e2e8f0 !important; box-shadow: 0 12px 40px rgba(0,0,0,0.12) !important; }
+        .action-dropdown-panel { padding: 0; }
+        .action-dropdown-panel .el-tabs { margin: 0; }
+        .action-dropdown-panel .el-tabs__header { margin: 0 !important; border-bottom: none; }
+        .action-dropdown-panel .el-tabs__nav-wrap { background: #f8fafc; border-radius: 12px 12px 0 0; overflow: hidden; }
+        .action-dropdown-panel .el-tabs__nav { border: none; background: transparent; display: flex; width: 100%; }
+        .action-dropdown-panel .el-tabs__item { 
+            flex: 1; 
+            text-align: center; 
+            border: none !important; 
+            color: #64748b; 
+            font-weight: 500; 
+            font-size: 13px;
+            padding: 0 16px;
+            height: 38px;
+            line-height: 38px;
+            transition: all 0.2s;
+        }
+        .action-dropdown-panel .el-tabs__item:hover { color: #3b82f6; background: rgba(59,130,246,0.05); }
+        .action-dropdown-panel .el-tabs__item.is-active { 
+            color: #fff; 
+            background: #3b82f6; 
+            font-weight: 600;
+            box-shadow: none;
+        }
+        .action-dropdown-panel .el-tabs__active-bar { display: none; }
+        .action-dropdown-panel .el-tabs__content { padding: 8px 12px 12px; }
+        .action-dropdown-panel .el-tab-pane { padding: 0; }
+        .action-dropdown-panel .el-tabs__content { border: none; }
+        
+        .action-list { @apply space-y-1 max-h-[220px] overflow-y-auto; }
+        .action-list::-webkit-scrollbar { width: 4px; }
+        .action-list::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 4px; }
+        
+        .action-item { 
+            @apply flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer 
+                   border border-transparent hover:bg-blue-50/80
+                   transition-all duration-150 text-sm;
+        }
+        .action-item:hover .action-item-icon { @apply text-blue-400; }
+        .action-item.active { @apply bg-blue-50 border-blue-100; }
+        .action-item.active .action-item-label { @apply text-blue-700 font-medium; }
+        .action-item-icon { @apply text-base text-slate-400 shrink-0 transition-colors; }
+        .action-item-label { @apply flex-1 text-slate-700 truncate; }
+        .action-item-tag { @apply shrink-0 !border-none font-medium; }
+        
+        /* 参数映射区域样式 */
+        .param-mapping-area { @apply bg-slate-50 rounded-lg p-4 border border-slate-200; }
+        .param-mapping-area table { @apply border-collapse; }
+        .param-mapping-area .el-select__wrapper { @apply min-h-[32px]; }
+        .param-mapping-area .el-input__wrapper { @apply shadow-none min-h-[32px]; }
+        .param-mapping-area .el-input { --el-input-height: 32px; }
+        
+        /* 字段映射参数值 - 事件字段选择器 */
+        .param-field-select {
+            display: flex; align-items: center;
+            height: 32px; padding: 0 4px 0 4px;
+        }
+        .param-field-prefix {
+            color: #3b82f6; font-family: monospace; font-size: 13px;
+            margin-right: 2px; font-weight: 600; user-select: none;
+        }
+        .param-field-select .el-select { flex: 1; }
+        .param-field-select .el-select .el-input__wrapper { 
+            box-shadow: none !important; 
+            border: none !important;
+            background: transparent;
+            padding: 0;
+        }
+        .param-field-select .el-select .el-input__inner { padding-left: 4px; }
+    </style>
+</head>
+<body class="bg-slate-50 h-screen overflow-hidden">
+    <div id="app" class="h-full flex flex-col" v-cloak>
+        
+        <!-- ================= 顶栏 Header ================= -->
+        <header class="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-6 shrink-0 z-50 shadow-sm relative">
+            <div class="flex items-center gap-4">
+                <el-button icon="Back" circle class="!border-gray-200" size="small"></el-button>
+                <div>
+                    <div class="flex items-center gap-3">
+                        <h1 class="text-[17px] font-black text-gray-800 tracking-tight">电表电压过高处理</h1>
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <!-- <span class="text-xs text-green-600 font-bold flex items-center gap-1 bg-green-50 px-2 py-1 rounded">
+                    <span class="relative flex h-2 w-2">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                    </span>
+                    配置已自动保存
+                </span> -->
+                <el-button @click="isVersionModalOpen = true" class="!text-blue-600" icon="Timer" size="default"></el-button>
+                <el-button @click="isPublishModalOpen = true" type="primary" class="font-bold !bg-blue-600">发布</el-button>
+            </div>
+        </header>
+
+        <!-- ================= 主体内容区 (左右分栏) ================= -->
+        <main class="flex-1 flex overflow-hidden">
+            
+            <!-- 【左侧：策略编排区】宽度约 60% -->
+            <section class="w-[55%] lg:w-[60%] h-full overflow-y-auto p-6 bg-[#eef2f6] custom-scrollbar">
+                
+                <!-- 模块 1：事件触发配置 -->
+                <div class="bg-white rounded-2xl border border-gray-100 shadow-sm mb-6 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-white">
+                        <div class="flex items-center">
+                            <div class="step-badge">1</div>
+                            <span class="text-base font-black text-gray-800">事件触发配置</span>
+                        </div>
+                        <el-button v-if="selectedEvent.name" type="primary" link icon="Edit" size="small" @click="isEventModalOpen = true">更换事件</el-button>
+                    </div>
+                    <div class="p-5 bg-slate-50/50">
+                        <div v-if="selectedEvent.name" class="bg-white border border-blue-200 rounded-xl p-4 shadow-sm flex items-start gap-4">
+                            <div class="p-2.5 rounded-lg shrink-0" :class="selectedEvent.source === 'Pulsar' ? 'bg-blue-50 text-blue-600' : 'bg-orange-50 text-orange-600'">
+                                <el-icon class="text-xl">
+                                    <Lightning v-if="selectedEvent.source === 'Pulsar'" />
+                                    <Timer v-else />
+                                </el-icon>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex items-center gap-3 mb-1.5">
+                                    <h3 class="text-sm font-bold text-slate-800">{{ selectedEvent.name }}</h3>
+                                    <el-tag size="small" effect="light" :type="selectedEvent.source === 'Pulsar' ? 'primary' : 'warning'">
+                                        {{ selectedEvent.source === 'Pulsar' ? 'Pulsar' : 'Timer' }}
+                                    </el-tag>
+                                </div>
+                                <p class="text-xs text-slate-500" v-if="selectedEvent.source === 'Pulsar'">
+                                    <span class="font-bold text-slate-600">IP: </span><span class="font-mono">{{ selectedEvent.ip }}</span><span class="font-bold text-slate-600 ml-2 mr-1">;</span><span class="font-bold text-slate-600">Topic: </span><span class="font-mono">{{ selectedEvent.topic }}</span>
+                                </p>
+                                <p class="text-xs text-slate-500 mb-1" v-else>
+                                    <span class="font-bold text-slate-600">Cron: </span><span class="font-mono">{{ selectedEvent.cron }}</span>
+                                </p>
+                            </div>
+                        </div>
+                        <div v-else class="border-2 border-dashed border-gray-300 rounded-xl py-3 flex flex-col items-center justify-center bg-white">
+                            <p class="text-xs text-slate-500 mb-2">请选择一个事件作为触发源</p>
+                            <el-button type="primary" size="small" icon="Plus" @click="isEventModalOpen = true">选择触发事件</el-button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 模块 2：事件分发策略 -->
+                <div class="bg-white rounded-2xl border border-gray-100 shadow-sm mb-6 overflow-hidden" :class="{'disabled-mask': !selectedEvent.name}">
+                    <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="step-badge">2</div>
+                            <span class="text-base font-black text-gray-800">事件分发策略</span>
+                        </div>
+                        <el-button type="primary" link icon="CirclePlus" size="small" @click="addBranch">添加条件分支</el-button>
+                    </div>
+                    <div class="p-5 bg-slate-50/50">
+                        <!-- 无分支时：显示默认配置 -->
+                        <div v-if="strategyRules.length === 0" class="bg-white border border-gray-200 rounded-xl p-5">
+                            <div class="flex items-center gap-2 mb-4">
+                                <span class="bg-blue-100 text-blue-600 px-2 py-0.5 rounded text-[11px] font-bold">默认配置</span>
+                                <span class="text-xs text-gray-500 font-medium">事件触发后的处理方式：</span>
+                            </div>
+                            
+                            <div class="space-y-3">
+                                <el-checkbox-group v-model="defaultTarget" class="flex gap-4" @change="handleDefaultTargetChange">
+                                    <el-checkbox value="rule" size="large" class="!flex-1">
+                                        <div class="flex flex-col">
+                                            <span class="font-bold text-gray-800">规则引擎</span>
+                                            <span class="text-xs text-gray-500">基于预定义规则执行确定性动作</span>
+                                        </div>
+                                    </el-checkbox>
+                                    <el-checkbox value="ai" size="large" class="!flex-1">
+                                        <div class="flex flex-col">
+                                            <span class="font-bold text-gray-800">自适应引擎</span>
+                                            <span class="text-xs text-gray-500">由AI智能体进行动态推理决策</span>
+                                        </div>
+                                    </el-checkbox>
+                                    <el-checkbox 
+                                        v-model="defaultTarget" 
+                                        value="none" 
+                                        size="large"
+                                        class="!flex-1">
+                                        <div class="flex flex-col">
+                                            <span class="font-bold text-gray-800">终止并记录日志</span>
+                                            <span class="text-xs text-gray-500">仅记录事件信息，不执行任何处理</span>
+                                        </div>
+                                    </el-checkbox>
+                                </el-checkbox-group>
+                            </div>
+                        </div>
+
+                        <!-- 有分支时：显示分支列表 + 兜底配置 -->
+                        <template v-else>
+                            <div v-for="(rule, index) in strategyRules" :key="index" class="branch-card relative group">
+                                <el-button class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 z-10" type="danger" link icon="Delete" size="small" @click="removeBranch(index)"></el-button>
+                                
+                                <div class="branch-cond-area">
+                                    <div class="flex items-center gap-2 mb-3">
+                                        <span class="bg-blue-100 text-blue-600 px-2 py-0.5 rounded text-[11px] font-bold">分支 {{index + 1}}</span>
+                                        <span class="text-xs text-gray-700 font-bold">{{ index === 0 ? '如果' : '否则如果' }}：</span>
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <div v-if="rule.conditions.length > 1" class="flex flex-col items-center justify-center shrink-0">
+                                            <el-select v-model="rule.logicOp" size="small" style="width: 55px;">
+                                                <el-option label="且" value="AND"></el-option>
+                                                <el-option label="或" value="OR"></el-option>
+                                            </el-select>
+                                        </div>
+                                        <div class="flex-1 space-y-2">
+                                            <div v-for="(cond, cIndex) in rule.conditions" :key="cIndex" class="flex items-center gap-2 compact-el">
+                                                <el-select v-model="cond.field" size="small" style="width: 110px" filterable>
+                                                    <el-option label="-- 从输入数据选择 --" value="" disabled v-if="availableFields.length > 0"></el-option>
+                                                    <el-option v-for="field in availableFields" :key="field" :label="field" :value="field"></el-option>
+                                                    <el-option label="电压 (V1)" value="V1"></el-option>
+                                                    <el-option label="状态 (Status)" value="Status"></el-option>
+                                                </el-select>
+                                                <el-select v-model="cond.op" size="small" style="width: 90px">
+                                                    <el-option label="大于 (>)" value=""></el-option>
+                                                    <el-option label="等于 (==)" value="=="></el-option>
+                                                    <el-option label="小于 (<)" value="<"></el-option>
+                                                    <el-option label="包含" value="contains"></el-option>
+                                                </el-select>
+                                                <el-input v-model="cond.value" size="small" placeholder="值" style="flex: 1; min-width: 60px;"></el-input>
+                                                <div class="flex items-center shrink-0">
+                                                    <el-button v-if="cIndex === rule.conditions.length - 1" type="primary" link icon="CirclePlus" size="small" @click="addCondition(index)"></el-button>
+                                                    <el-button v-if="rule.conditions.length > 1" type="danger" link icon="Remove" size="small" @click="removeCondition(index, cIndex)"></el-button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="branch-action-area">
+                                    <span class="text-[11px] font-bold text-gray-400 mb-1">分发至处理引擎</span>
+                                    <div class="flex gap-3 mt-1">
+                                        <el-checkbox v-model="rule.target" value="rule" size="small">规则引擎</el-checkbox>
+                                        <el-checkbox v-model="rule.target" value="ai" size="small">自适应引擎</el-checkbox>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="branch-card !mb-0 !border-dashed border-gray-300 opacity-80 flex-row">
+                                <div class="branch-cond-area !py-3 !bg-transparent">
+                                    <div class="flex items-center gap-2">
+                                        <span class="bg-gray-200 text-gray-600 px-2 py-0.5 rounded text-[11px] font-bold">兜底</span>
+                                        <span class="text-xs text-gray-700 font-bold">否则：</span>
+                                    </div>
+                                </div>
+                                <div class="branch-action-area !bg-gray-100/50 !w-[420px] !flex-row !items-center !gap-4">
+                                    <el-checkbox-group v-model="defaultTarget" size="small" @change="handleDefaultTargetChange" class="flex gap-3">
+                                        <el-checkbox value="rule">规则引擎</el-checkbox>
+                                        <el-checkbox value="ai">自适应引擎</el-checkbox>
+                                        <el-checkbox value="none">终止并记录日志</el-checkbox>
+                                    </el-checkbox-group>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- ================== 视觉：并行分支连接线 ================== -->
+                <div class="relative w-full h-10 -mt-6 mb-2 pointer-events-none" :class="{'opacity-40': !selectedEvent.name}">
+                    <!-- 中心垂直线 (从上个模块接出来) -->
+                    <div class="absolute left-1/2 top-0 w-px h-5 bg-gray-300 -translate-x-1/2"></div>
+                    <!-- 水平分叉干线 -->
+                    <div class="absolute left-[25%] right-[25%] top-5 h-px bg-gray-300"></div>
+                    <!-- 左侧向下垂线 -->
+                    <div class="absolute left-[25%] top-5 w-px h-5 bg-gray-300"></div>
+                    <!-- 右侧向下垂线 -->
+                    <div class="absolute right-[25%] top-5 w-px h-5 bg-gray-300"></div>
+                    
+                    <!-- 标签徽章 -->
+                    <div class="absolute left-1/2 top-5 -translate-x-1/2 -translate-y-1/2 bg-[#eef2f6] px-2">
+                        <div class="border border-gray-300 bg-white text-[10px] text-gray-500 font-bold px-2 py-0.5 rounded-full shadow-sm flex items-center gap-1">
+                            <el-icon><Guide /></el-icon> 触发执行
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 模块 3：事件处理策略 (强制并排展示) -->
+                <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden" :class="{'disabled-mask': !selectedEvent.name}">
+                    <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-white z-10 relative">
+                        <div class="flex items-center">
+                            <div class="step-badge">3</div>
+                            <span class="text-base font-black text-gray-800">事件处理策略</span>
+                        </div>
+                    </div>
+                    
+                    <!-- 强制 flex-row 确保左右轨道并列排布 -->
+                    <div class="p-6 bg-slate-50/50 flex flex-row gap-6 items-start">
+                        
+                        <!-- ================= 左轨：规则引擎 ================= -->
+                        <div class="engine-track" :class="!enableRule ? 'opacity-60 grayscale' : 'border-blue-200'">
+                            <!-- 引擎头部 (带背景色) -->
+                            <div class="bg-gradient-to-b from-blue-50 to-white p-4 border-b border-gray-100 border-t-4 border-t-blue-500 flex justify-between items-center rounded-t-xl relative">
+                                <div class="flex items-center gap-2">
+                                    <div class="p-1.5 bg-blue-100 text-blue-600 rounded">
+                                        <el-icon class="text-sm"><SetUp /></el-icon>
+                                    </div>
+                                    <span class="text-sm font-black text-slate-800">规则引擎</span>
+                                    <el-switch v-model="enableRule" size="small" class="ml-3"></el-switch>
+                                </div>
+                                <el-button type="primary" link icon="CirclePlus" size="small" :disabled="!enableRule" @click="ruleDialogVisible = true" class="absolute top-3 right-3">创建规则</el-button>
+                            </div>
+                            
+                            <!-- 引擎内容区 -->
+                            <div class="p-4 flex-1 flex flex-col bg-white rounded-b-xl">
+                                <div class="flex items-center justify-between mb-3">
+                                    <span class="label-cap !mb-0">执行动作汇总</span>
+                                </div>
+                                <div class="flex flex-wrap gap-1.5 mb-4 p-2 bg-slate-50 rounded-lg border border-slate-100 min-h-[40px] items-center" :class="!enableRule && 'opacity-40 grayscale pointer-events-none select-none'">
+                                    <template v-if="ruleOutputs.length === 0">
+                                        <span class="text-xs text-gray-400 italic px-2">暂无执行动作</span>
+                                    </template>
+                                    <template v-else>
+                                        <el-badge v-for="act in ruleOutputs" :key="act" :is-dot="isDuplicate(act) || duplicateInRule.includes(act)" :type="duplicateInRule.includes(act) ? 'danger' : 'warning'">
+                                            <el-tag size="small" effect="plain" class="!bg-white font-bold">{{act}}</el-tag>
+                                        </el-badge>
+                                    </template>
+                                </div>
+                                
+                                <div class="space-y-3 flex-1">
+                                    <!-- 优化10: 空状态优化 -->
+                                    <div v-if="rules.length === 0" class="text-center py-6">
+                                        <el-icon class="text-3xl text-gray-200 mb-2"><Document /></el-icon>
+                                        <p class="text-xs text-gray-400 mb-2">暂无规则配置</p>
+                                        <el-button type="primary" size="small" icon="Plus" @click="ruleDialogVisible = true" :disabled="!enableRule">
+                                            创建规则
+                                        </el-button>
+                                    </div>
+                                    <div v-for="rule in rules" :key="rule.id" class="atomic-item !border-l-2 !mb-0 relative" :class="!enableRule || !rule.active ? '!border-l-gray-300' : '!border-l-blue-400'">
+                                        <div class="absolute top-3 right-3 flex items-center gap-1">
+                                            <el-switch v-model="rule.active" size="small"></el-switch>
+                                            <el-button type="primary" link icon="Edit" size="small" @click="editRule(rule)" class="!p-0 !mx-0 !ml-0 !mr-0" style="margin:0 !important"></el-button>
+                                            <el-button type="danger" link icon="Delete" size="small" @click="removeRule(rule.id)" class="!p-0 !mx-0 !ml-0 !mr-0" style="margin:0 !important"></el-button>
+                                        </div>
+                                        <div class="pr-14">
+                                            <span class="text-[13px] font-black text-slate-800 truncate block" :title="rule.name" :class="!rule.active && 'opacity-40 grayscale'">{{rule.name}}</span>
+                                            <div class="space-y-2 mt-2" :class="!rule.active && 'opacity-40 grayscale pointer-events-none select-none'">
+                                                <div class="flex items-start gap-1.5">
+                                                    <span class="text-[11px] font-bold text-slate-400 shrink-0 pt-0.5">执行条件</span>
+                                                    <div v-if="rule.cond" class="bg-slate-50 px-2 py-1 rounded border border-slate-200 text-xs font-mono font-bold text-blue-600 line-clamp-1 flex-1" :title="rule.cond">{{rule.cond}}</div>
+                                                    <div v-else class="bg-slate-50 px-2 py-1 rounded border border-slate-200 text-xs font-bold text-gray-400 line-clamp-1 flex-1">未配置执行条件，将直接执行动作</div>
+                                                </div>
+                                                <div class="flex items-start gap-1.5">
+                                                    <span class="text-[11px] font-bold text-slate-400 shrink-0 pt-0.5">执行动作</span>
+                                                    <div class="flex flex-wrap gap-1 flex-1">
+                                                        <el-tag v-if="rule.actLabel" size="small" type="info" effect="dark" class="!border-none !text-[10px]">{{rule.actLabel}}</el-tag>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ================= 右轨：自适应引擎 ================= -->
+                        <div class="engine-track" :class="!enableAi ? 'opacity-60 grayscale' : 'border-purple-200'">
+                            <!-- 引擎头部 (带背景色) -->
+                            <div class="bg-gradient-to-b from-purple-50 to-white p-4 border-b border-gray-100 border-t-4 border-t-purple-500 flex justify-between items-center rounded-t-xl relative">
+                                <div class="flex items-center gap-2">
+                                    <div class="p-1.5 bg-purple-100 text-purple-600 rounded">
+                                        <el-icon class="text-sm"><Cpu /></el-icon>
+                                    </div>
+                                    <span class="text-sm font-black text-slate-800">自适应引擎</span>
+                                    <el-switch v-model="enableAi" size="small" class="ml-3"></el-switch>
+                                </div>
+                                <el-button type="primary" link icon="Connection" size="small" :disabled="!enableAi" @click="agentDialogVisible = true" class="absolute top-3 right-3">绑定智能体</el-button>
+                            </div>
+                            
+                            <!-- 引擎内容区 -->
+                            <div class="p-4 flex-1 flex flex-col bg-white rounded-b-xl">
+                                <div class="flex items-center justify-between mb-3">
+                                    <span class="label-cap !mb-0">可执行动作汇总</span>
+                                </div>
+                                <div class="flex flex-wrap gap-1.5 mb-4 p-2 bg-slate-50 rounded-lg border border-slate-100 min-h-[40px] items-center" :class="!enableAi && 'opacity-40 grayscale pointer-events-none select-none'">
+                                    <template v-if="aiOutputs.length === 0">
+                                        <span class="text-xs text-gray-400 italic px-2">暂无执行动作</span>
+                                    </template>
+                                    <template v-else>
+                                        <el-badge v-for="act in aiOutputs" :key="act" :is-dot="isDuplicate(act) || duplicateInAi.includes(act)" :type="duplicateInAi.includes(act) ? 'danger' : 'warning'">
+                                            <el-tag size="small" effect="plain" type="warning" class="!bg-white font-bold">{{act}}</el-tag>
+                                        </el-badge>
+                                    </template>
+                                </div>
+                                
+                                <div class="space-y-3 flex-1">
+                                    <!-- 优化10: 空状态优化 -->
+                                    <div v-if="agents.length === 0" class="text-center py-6">
+                                        <el-icon class="text-3xl text-gray-200 mb-2"><Connection /></el-icon>
+                                        <p class="text-xs text-gray-400 mb-2">暂无智能体绑定</p>
+                                        <el-button type="primary" size="small" icon="Plus" @click="agentDialogVisible = true" :disabled="!enableAi">
+                                            绑定智能体
+                                        </el-button>
+                                    </div>
+                                    <div v-for="agent in agents" :key="agent.id" class="atomic-item !border-l-2 !mb-0 relative" :class="!enableAi || !agent.active ? '!border-l-gray-300' : '!border-l-purple-400'">
+                                        <div class="absolute top-3 right-3 flex items-center gap-1">
+                                            <el-switch v-model="agent.active" size="small"></el-switch>
+                                            <el-button type="danger" link icon="Delete" size="small" @click="removeAgent(agent.id)" class="!p-0 !mx-0 !ml-0 !mr-0" style="margin:0 !important"></el-button>
+                                        </div>
+                                        <div class="pr-14">
+                                            <span class="text-[13px] font-black text-slate-800 truncate block" :title="agent.name" :class="!agent.active && 'opacity-40 grayscale'">{{agent.name}}</span>
+                                            <div class="space-y-2 mt-2" :class="!agent.active && 'opacity-40 grayscale pointer-events-none select-none'">
+                                                <div class="flex items-start gap-1.5">
+                                                    <span class="text-[11px] font-bold text-slate-400 shrink-0 pt-0.5">模型</span>
+                                                    <el-tag size="small" color="#7c3aed" class="!text-white !border-none font-bold !text-[9px] px-1 h-5 leading-5" :class="!agent.active && 'opacity-40 grayscale'">{{agent.model}}</el-tag>
+                                                </div>
+                                                <div class="flex items-start gap-1.5">
+                                                    <span class="text-[11px] font-bold text-slate-400 shrink-0 pt-0.5">可执行动作</span>
+                                                    <div class="flex flex-wrap gap-1 flex-1">
+                                                        <el-tag v-for="tool in agent.tools" size="small" type="warning" effect="dark" class="!border-none !text-[10px]">{{tool}}</el-tag>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+                
+                <!-- 底部留白 -->
+                <div class="h-10"></div>
+            </section>
+
+            <!-- 【右侧：调试控制台区】宽度约 40% -->
+            <section class="w-[45%] lg:w-[40%] bg-[#1e1e1e] flex flex-col text-slate-300 z-20 shadow-[-4px_0_15px_rgba(0,0,0,0.1)] border-l border-[#333]">
+                <!-- Tabs 切换 -->
+                <div class="flex bg-[#252526] border-b border-[#333] shrink-0">
+                    <button @click="activeTab = 'mock'" :class="['flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 border-t-2 outline-none transition-colors', activeTab === 'mock' ? 'border-blue-500 bg-[#1e1e1e] text-white' : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-[#2a2a2b]']">
+                        <el-icon><Operation /></el-icon> 模拟测试
+                    </button>
+                    <button @click="activeTab = 'monitor'" :class="['flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 border-t-2 outline-none transition-colors', activeTab === 'monitor' ? 'border-green-500 bg-[#1e1e1e] text-white' : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-[#2a2a2b]']">
+                        <el-icon><VideoPlay /></el-icon> 在线监听
+                    </button>
+                </div>
+
+                <!-- Tab 1: 模拟测试 -->
+                <div v-if="activeTab === 'mock'" class="flex-1 flex flex-col min-h-0 bg-[#1e1e1e]">
+                    <div class="p-4 border-b border-[#333] shrink-0 bg-[#252526]/30">
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="text-xs font-medium text-slate-400 flex items-center gap-1">输入模拟事件数据 Payload (JSON)</label>
+                            <el-tooltip content="请先选择触发事件" :disabled="!!selectedEvent.name" placement="top" effect="light">
+                                <el-button link type="primary" size="small" :disabled="!selectedEvent.name" @click="loadHistoryData">选择历史事件数据</el-button>
+                            </el-tooltip>
+                        </div>
+                        <textarea v-model="mockJson" class="w-full h-40 bg-[#1e1e1e] border border-[#444] rounded p-3 text-xs font-mono text-green-400 focus:border-[#666] outline-none resize-none console-scrollbar" spellcheck="false"></textarea>
+                        <div class="mt-3 flex justify-end">
+                            <el-button type="primary" color="#2563eb" @click="runMockTest" :loading="isRunning" size="small" class="w-32">
+                                {{ isRunning ? '执行中...' : '启动测试' }}
+                            </el-button>
+                        </div>
+                    </div>
+                    
+                    <div class="flex-1 p-4 overflow-y-auto console-scrollbar bg-[#1e1e1e]" id="mock-console">
+                        <div class="text-[11px] font-medium text-[#666] mb-3 uppercase tracking-wider flex items-center gap-2">
+                            执行日志
+                        </div>
+                        <div class="space-y-1.5 font-mono text-[12px] leading-relaxed">
+                            <div v-if="mockLogs.length === 0" class="text-[#555] italic">等待载入模拟事件数据并启动测试...</div>
+                            <div v-for="(log, idx) in mockLogs" :key="idx" v-html="log.html" :class="log.colorClass"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 2: 在线监听 -->
+                <div v-if="activeTab === 'monitor'" class="flex-1 flex flex-col min-h-0 bg-[#1e1e1e]">
+                    <div class="p-4 border-b border-[#333] flex items-center justify-between shrink-0 bg-[#252526]">
+                        <div class="flex items-center gap-3">
+                            <el-switch v-model="isListening" inline-prompt active-text="ON" inactive-text="OFF" @change="toggleListening"></el-switch>
+                            <span class="text-sm font-medium" :class="isListening ? 'text-green-400' : 'text-slate-400'">
+                                {{ isListening ? '监听实时事件源中...' : '监听已关闭' }}
+                            </span>
+                        </div>
+                        <el-button link size="small" @click="realtimeLogs =[]" class="!text-slate-400 hover:!text-white">清空</el-button>
+                    </div>
+                    <div class="flex-1 p-4 overflow-y-auto console-scrollbar font-mono text-[12px] space-y-2" id="realtime-console">
+                         <div v-if="realtimeLogs.length === 0" class="text-[#555] italic text-center mt-10">
+                            开启监听后，将在此显示真实事件触发的执行日志
+                         </div>
+                         <div v-for="(log, idx) in realtimeLogs" :key="idx" v-html="log.html" :class="log.colorClass"></div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- ================= 选择事件弹窗 (从事件驱动0430移植) ================= -->
+        <div v-if="isEventModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-black bg-opacity-40 backdrop-blur-sm"></div>
+            <div class="relative bg-white rounded-lg shadow-xl p-6 w-full max-w-5xl">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-bold text-slate-800">选择事件</h3>
+                    <button @click="isEventModalOpen = false" class="text-slate-400 hover:text-slate-600 p-1 rounded-full hover:bg-slate-100">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                    </button>
+                </div>
+                <div class="max-h-96 overflow-y-auto mb-4">
+                    <table class="w-full text-sm text-left">
+                        <thead class="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200">
+                            <tr>
+                                <th class="px-4 py-2 font-medium w-[30%]">事件名称</th>
+                                <th class="px-4 py-2 font-medium w-[15%]">触发源类型</th>
+                                <th class="px-4 py-2 font-medium w-[35%]">配置信息</th>
+                                <th class="px-4 py-2 font-medium w-[10%]">状态</th>
+                                <th class="px-4 py-2 font-medium w-[10%]">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="event in eventsList" :key="event.id" class="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
+                                <td class="px-4 py-3 font-medium text-slate-700">{{ event.name }}</td>
+                                <td class="px-4 py-3">
+                                    <span v-if="event.type === 'Pulsar'" class="flex items-center text-blue-600">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 mr-1"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                                        Pulsar
+                                    </span>
+                                    <span v-else class="flex items-center text-slate-600">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 mr-1"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                        Timer
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3 text-slate-600">
+                                    <div v-if="event.type === 'Pulsar'">
+                                        <div>IP: 10.0.1.2:6650</div>
+                                        <div>Topic: {{ event.topic }}</div>
+                                    </div>
+                                    <div v-else class="inline-block bg-slate-50 px-3 py-1 rounded text-slate-700">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 mr-1 inline"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/><path d="m9 16 2 2 4-4"/></svg>
+                                        <span v-if="event.cron === '0 22 ? * FRI'">每周五 22:00:00</span>
+                                        <span v-else-if="event.cron === '0 30 8 ? * *'">每日 08:30:00</span>
+                                        <span v-else>{{ event.cron }}</span>
+                                    </div>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <span :class="event.status ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-800'" class="px-2 py-1 rounded text-xs font-medium">
+                                        {{ event.status ? '启用' : '停用' }}
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <button 
+                                        @click="selectEvent(event)" 
+                                        :class="event.status ? 'text-blue-600 hover:text-blue-800' : 'text-slate-300 cursor-not-allowed'" 
+                                        :disabled="!event.status"
+                                        class="text-sm font-medium"
+                                    >
+                                        选择
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="flex justify-end gap-3">
+                    <button @click="isEventModalOpen = false" class="px-6 py-2 text-sm text-slate-600 font-medium border border-slate-200 rounded hover:bg-white transition-colors">取消</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 选择历史事件数据弹窗 -->
+        <el-dialog v-model="isHistoryModalOpen" title="选择历史事件数据" width="900px" top="8vh">
+            <div class="mb-4">
+                <h4 class="text-sm font-bold text-slate-700 mb-2">当前事件：{{ selectedEvent.name || '未选择事件' }}</h4>
+            </div>
+            <el-table :data="historyList" height="450" stripe border size="default">
+                <el-table-column prop="id" label="事件ID" width="200">
+                    <template #default="scope"><span class="font-bold text-slate-700 text-xs">{{scope.row.id}}</span></template>
+                </el-table-column>
+                <el-table-column prop="timestamp" label="触发时间" width="180">
+                    <template #default="scope"><span class="text-xs text-slate-600">{{scope.row.timestamp}}</span></template>
+                </el-table-column>
+                <el-table-column label="事件数据" min-width="400">
+                    <template #default="scope">
+                        <div class="bg-slate-900 text-green-400 p-3 rounded text-xs font-mono overflow-x-auto max-h-32">
+                            {{ JSON.stringify(scope.row.data, null, 2) }}
+                        </div>
+                    </template>
+                </el-table-column>
+                <el-table-column label="操作" width="80" align="center" fixed="right">
+                    <template #default="scope">
+                        <el-button type="primary" link @click="selectHistoryData(scope.row)">选择</el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+        </el-dialog>
+
+        <el-dialog v-model="ruleDialogVisible" :title="isEditMode ? '编辑规则' : '创建规则'" width="650px" align-center>
+            <div class="space-y-5">
+                <div>
+                    <span class="label-cap">规则名称</span>
+                    <el-input v-model="newRule.name" placeholder="输入规则名称"></el-input>
+                </div>
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="label-cap">执行条件</span>
+                        <el-button type="primary" link icon="CirclePlus" size="small" @click="addNewRuleCondition">添加</el-button>
+                    </div>
+                    <div v-if="newRule.conditions.length === 0" class="text-center py-3 text-sm text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-200">
+                       未配置执行条件时，将直接执行动作
+                    </div>
+                    <div v-else class="flex gap-2">
+                        <div v-if="newRule.conditions.length > 1" class="flex flex-col items-center justify-center shrink-0">
+                            <el-select v-model="newRule.logicOp" size="small" style="width: 55px;">
+                                <el-option label="且" value="AND"></el-option>
+                                <el-option label="或" value="OR"></el-option>
+                            </el-select>
+                        </div>
+                        <div class="flex-1 space-y-2">
+                            <div v-for="(cond, cIndex) in newRule.conditions" :key="cIndex" class="flex items-center gap-2 compact-el">
+                                <el-select v-model="cond.field" size="small" style="width: 120px" filterable>
+                                    <el-option label="-- 从输入数据选择 --" value="" disabled v-if="availableFields.length > 0"></el-option>
+                                    <el-option v-for="field in availableFields" :key="field" :label="field" :value="field"></el-option>
+                                    <el-option label="电压 (V1)" value="V1"></el-option>
+                                    <el-option label="设备状态 (Status)" value="Status"></el-option>
+                                </el-select>
+                                <el-select v-model="cond.op" size="small" style="width: 100px"><el-option label="大于 (>)" value=""></el-option><el-option label="等于 (==)" value="=="></el-option><el-option label="小于 (<)" value="<"></el-option></el-select>
+                                <el-input v-model="cond.value" size="small" placeholder="值" style="flex: 1; min-width: 60px;"></el-input>
+                                <div class="flex items-center shrink-0">
+                                    <el-button v-if="newRule.conditions.length >= 1" type="danger" link icon="Remove" size="small" @click="removeNewRuleCondition(cIndex)"></el-button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <span class="label-cap">执行动作</span>
+                    <div class="action-trigger-wrapper">
+                        <el-popover ref="actionPopoverRef" trigger="click" placement="bottom" :width="620" :show-arrow="false" popper-class="action-dropdown-popover">
+                            <template #reference>
+                                <div class="action-trigger-input" :class="{'is-focus': actionPopoverRef?.visible}">
+                                    <input class="action-trigger-field" :value="selectedActionLabel" placeholder="选择要执行的动作" readonly />
+                                    <span class="action-trigger-suffix">
+                                        <el-icon><ArrowDown /></el-icon>
+                                    </span>
+                                </div>
+                            </template>
+                            <div class="action-dropdown-panel">
+                                <el-tabs v-model="actionTabActive" type="border-card" class="action-tabs">
+                                    <el-tab-pane label="系统集成" name="api">
+                                        <div class="action-list">
+                                            <div v-for="api in apiExecutorList" :key="api.value"
+                                                 class="action-item"
+                                                 :class="{active: newRule.selectedAction === api.value}"
+                                                 @click="selectAction(api)">
+                                                <el-icon class="action-item-icon"><Connection /></el-icon>
+                                                <span class="action-item-label">{{ api.label }}</span>
+                                                <el-tag size="small" type="info" effect="light" round class="action-item-tag">{{ api.method }}</el-tag>
+                                            </div>
+                                        </div>
+                                    </el-tab-pane>
+                                    <el-tab-pane label="设备控制" name="protocol">
+                                        <div class="action-list">
+                                            <div v-for="proto in protocolList" :key="proto.value"
+                                                 class="action-item"
+                                                 :class="{active: newRule.selectedAction === proto.value}"
+                                                 @click="selectAction(proto)">
+                                                <el-icon class="action-item-icon"><Monitor /></el-icon>
+                                                <span class="action-item-label">{{ proto.label }}</span>
+                                                <el-tag size="small" type="warning" effect="light" round class="action-item-tag">{{ proto.protocol }}</el-tag>
+                                            </div>
+                                        </div>
+                                    </el-tab-pane>
+                                    <el-tab-pane label="工作流" name="workflow">
+                                        <div class="action-list">
+                                            <div v-for="wf in workflowList" :key="wf.value"
+                                                 class="action-item"
+                                                 :class="{active: newRule.selectedAction === wf.value}"
+                                                 @click="selectAction(wf)">
+                                                <el-icon class="action-item-icon"><Share /></el-icon>
+                                                <span class="action-item-label">{{ wf.label }}</span>
+                                                <el-tag size="small" type="success" effect="light" round class="action-item-tag">{{ wf.category }}</el-tag>
+                                            </div>
+                                        </div>
+                                    </el-tab-pane>
+                                    <el-tab-pane label="通知" name="notification">
+                                        <div class="action-list">
+                                            <div v-for="notif in notificationList" :key="notif.value"
+                                                 class="action-item"
+                                                 :class="{active: newRule.selectedAction === notif.value}"
+                                                 @click="selectAction(notif)">
+                                                <el-icon class="action-item-icon"><Bell /></el-icon>
+                                                <span class="action-item-label">{{ notif.label }}</span>
+                                                <el-tag size="small" type="danger" effect="light" round class="action-item-tag">{{ notif.channel }}</el-tag>
+                                            </div>
+                                        </div>
+                                    </el-tab-pane>
+                                </el-tabs>
+                            </div>
+                        </el-popover>
+                    </div>
+                    
+                    <!-- 参数映射区域 -->
+                    <div v-if="newRule.selectedAction" class="param-mapping-area mt-4">
+                        <template v-if="currentActionType === 'workflow'">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex items-center gap-2">
+                                    <div class="p-1.5 bg-indigo-100 text-indigo-600 rounded">
+                                        <el-icon><Share /></el-icon>
+                                    </div>
+                                    <h3 class="font-semibold text-sm text-slate-800">字段映射</h3>
+                                </div>
+                                <span class="text-[11px] text-slate-400 bg-slate-50 px-2 py-1 rounded">将事件字段信息映射至工作流输入参数</span>
+                            </div>
+                            <div class="border border-slate-200 rounded-lg overflow-hidden">
+                                <table class="w-full text-sm text-left">
+                                    <thead class="text-[11px] text-slate-500 bg-slate-50 uppercase border-b border-slate-200">
+                                        <tr>
+                                            <th class="px-4 py-2 font-medium w-[30%]">工作流输入参数</th>
+                                            <th class="px-2 py-2 font-medium w-[12%]">类型</th>
+                                            <th class="px-2 py-2 font-medium w-[22%]">映射方式</th>
+                                            <th class="px-4 py-2 font-medium">参数值</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="(param, index) in workflowParams" :key="index" class="border-b border-slate-100 last:border-0 hover:bg-slate-50/50 transition-colors">
+                                            <td class="px-4 py-2.5">
+                                                <div class="flex items-center gap-1 font-medium text-slate-700 text-[13px]">
+                                                    <span v-if="param.required" class="text-red-500">*</span>
+                                                    <code class="font-mono text-[12px] bg-slate-100 px-1 py-0.5 rounded">{{ param.paramName }}</code>
+                                                </div>
+                                                <div class="text-[10px] text-slate-400 mt-0.5">{{ param.desc }}</div>
+                                            </td>
+                                            <td class="px-2 py-2.5">
+                                                <span class="bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded text-[10px] font-mono">{{ param.type }}</span>
+                                            </td>
+                                            <td class="px-2 py-2.5">
+                                                <el-select v-model="param.mapType" size="small" style="width: 100%">
+                                                    <el-option label="事件字段信息" value="event"></el-option>
+                                                    <el-option label="自定义值" value="fixed"></el-option>
+                                                </el-select>
+                                            </td>
+                                            <td class="px-4 py-2.5 align-middle">
+                                                <div v-if="param.mapType === 'event'" class="param-field-select">
+                                                    <span class="param-field-prefix">$</span>
+                                                    <el-select v-model="param.sourcePath" placeholder="请选择事件字段" size="small" filterable clearable class="flex-1 param-field-dropdown">
+                                                        <el-option v-for="field in availableFields" :key="field" :label="field" :value="field">
+                                                            <span class="font-mono text-xs">{{ field }}</span>
+                                                        </el-option>
+                                                    </el-select>
+                                                </div>
+                                                <el-input v-else v-model="param.fixedValue" size="small" placeholder="输入静态值" clearable></el-input>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </template>
+                        
+                        <!-- 其他类型的待配置占位 -->
+                        <template v-else>
+                            <div class="flex flex-col items-center justify-center py-8 px-6 border-2 border-dashed border-slate-200 rounded-lg bg-slate-50">
+                                <el-icon class="text-3xl text-slate-300 mb-3"><Setting /></el-icon>
+                                <p class="text-sm text-slate-500 font-medium mb-1">待配置模块</p>
+                                <p class="text-xs text-slate-400">该类型执行动作的参数映射功能正在开发中</p>
+                                <el-tag size="small" type="info" class="mt-3" effect="plain">即将上线</el-tag>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+            <template #footer>
+                <el-button @click="ruleDialogVisible = false">取消</el-button>
+                <el-button type="primary" @click="confirmRuleConfig" :disabled="!newRule.name || !newRule.selectedAction">确认保存</el-button>
+            </template>
+        </el-dialog>
+
+        <el-dialog v-model="agentDialogVisible" title="绑定平台智能体" width="700px" align-center>
+            <el-table :data="libraryAgents" @selection-change="handleAgentSelection" height="300" stripe border>
+                <el-table-column type="selection" width="45" align="center"></el-table-column>
+                <el-table-column label="智能体名称" width="180">
+                    <template #default="scope"><div class="font-bold text-gray-800">{{ scope.row.name }}</div></template>
+                </el-table-column>
+                <el-table-column prop="model" label="模型" width="120">
+                    <template #default="scope"><el-tag size="small" color="#7c3aed" class="!text-white !border-none">{{ scope.row.model }}</el-tag></template>
+                </el-table-column>
+                <el-table-column label="工具箱">
+                    <template #default="scope">
+                        <el-tag v-for="tool in scope.row.tools" size="small" type="warning" effect="light" class="mr-1 mb-1">{{ tool }}</el-tag>
+                    </template>
+                </el-table-column>
+            </el-table>
+            <template #footer>
+                <el-button @click="agentDialogVisible = false">取消</el-button>
+                <el-button type="primary" @click="confirmBindAgent" :disabled="selectedAgents.length === 0">确认绑定 ({{selectedAgents.length}})</el-button>
+            </template>
+        </el-dialog>
+
+        <!-- 多版本管理弹窗 -->
+        <el-dialog v-model="isVersionModalOpen" title="版本管理" width="600px" top="8vh">
+            <div class="custom-scrollbar" style="max-height: 450px; overflow-y: auto; padding-top: 32px;">
+                <el-timeline>
+                    <!-- 当前/草稿版本 -->
+                    <el-timeline-item placement="top" type="primary" :hollow="false" size="large">
+                        <div class="flex items-center gap-2">
+                            <el-tag size="small" type="primary" effect="light">当前草稿</el-tag>
+                            <span class="text-xs text-gray-500">草稿版本（可编辑）</span>
+                        </div>
+                    </el-timeline-item>
+
+                    <!-- 已发布/运行中版本 -->
+                    <el-timeline-item v-if="currentPublishedVersion" placement="top" type="warning" size="large" hide-timestamp>
+                        <div class="flex items-center gap-2">
+                            <el-tag size="small" type="warning" effect="light">已发布/运行中</el-tag>
+                            <span class="text-xs text-gray-500">当前生效版本</span>
+                        </div>
+                        <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm relative group mt-3">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-sm font-bold text-gray-800">{{ currentPublishedVersion.version }}</span>
+                                <el-dropdown trigger="click" placement="bottom-end">
+                                    <el-button size="small" text icon="More" class="!text-gray-500 hover:!text-blue-600"></el-button>
+                                    <template #dropdown>
+                                        <el-dropdown-menu>
+                                            <el-dropdown-item @click="viewVersionDetail(currentPublishedVersion)">查看详情</el-dropdown-item>
+                                            <el-dropdown-item divided @click="rollbackToVersion(currentPublishedVersion)">覆盖当前草稿</el-dropdown-item>
+                                        </el-dropdown-menu>
+                                    </template>
+                                </el-dropdown>
+                            </div>
+                            <div class="text-xs text-gray-500 space-y-1">
+                                <p><span class="text-gray-600">版本描述：</span>{{ currentPublishedVersion.description }}</p>
+                                <p><span class="text-gray-600">发布时间：</span>{{ currentPublishedVersion.publishTime }}</p>
+                            </div>
+                        </div>
+                    </el-timeline-item>
+
+                    <!-- 历史版本 -->
+                    <el-timeline-item 
+                        v-for="(version, index) in historyVersions" 
+                        :key="version.id"
+                        placement="top" 
+                        type="info" 
+                        size="large"
+                        hide-timestamp
+                    >
+                        <div class="flex items-center gap-2">
+                            <el-tag size="small" effect="light" class="!bg-gray-100 !text-gray-500 !border-gray-200">历史版本</el-tag>
+                            <span class="text-xs text-gray-500">历史发布版本</span>
+                        </div>
+                        <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm relative group mt-3">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-sm font-bold text-gray-800">{{ version.version }}</span>
+                                <el-dropdown trigger="click" placement="bottom-end">
+                                    <el-button size="small" text icon="More" class="!text-gray-500 hover:!text-blue-600"></el-button>
+                                    <template #dropdown>
+                                        <el-dropdown-menu>
+                                            <el-dropdown-item @click="viewVersionDetail(version)">查看详情</el-dropdown-item>
+                                            <el-dropdown-item divided @click="rollbackToVersion(version)">覆盖当前草稿</el-dropdown-item>
+                                        </el-dropdown-menu>
+                                    </template>
+                                </el-dropdown>
+                            </div>
+                            <div class="text-xs text-gray-500 space-y-1">
+                                <p><span class="text-gray-600">版本描述：</span>{{ version.description }}</p>
+                                <p><span class="text-gray-600">发布时间：</span>{{ version.publishTime }}</p>
+                            </div>
+                        </div>
+                    </el-timeline-item>
+
+                    <!-- 空状态 -->
+                    <div v-if="!currentPublishedVersion && historyVersions.length === 0" class="text-center py-8">
+                        <el-icon class="text-4xl text-gray-300 mb-3"><Document /></el-icon>
+                        <p class="text-sm text-gray-400">暂无历史版本</p>
+                        <p class="text-xs text-gray-400 mt-1">发布配置后将自动创建版本记录</p>
+                    </div>
+                </el-timeline>
+            </div>
+        </el-dialog>
+
+        <!-- 发布弹窗 -->
+        <el-dialog v-model="isPublishModalOpen" title="发布配置" width="520px" align-center>
+            <el-form :model="publishForm" :rules="publishRules" ref="publishFormRef" label-position="top">
+                <el-form-item label="版本号" prop="version">
+                    <el-input v-model="publishForm.version" placeholder="请输入版本号"></el-input>
+                </el-form-item>
+                <el-form-item label="版本描述" prop="description">
+                    <el-input 
+                        v-model="publishForm.description" 
+                        type="textarea" 
+                        :rows="4" 
+                        placeholder="请简要描述本次变更的核心内容"
+                        maxlength="200"
+                        show-word-limit
+                    ></el-input>
+                </el-form-item>
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-start gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-4 h-4 text-blue-500 mt-0.5 shrink-0">
+                        <path fill-rule="evenodd" d="M2 8a6 6 0 1 1 12 0 6 6 0 0 1-12 0Zm6-4a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 8 4Zm0 8a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clip-rule="evenodd" />
+                    </svg>
+                    <p class="text-xs text-blue-700">发布后新配置将立即生效，可在事件记录中查看其运行记录。</p>
+                </div>
+            </el-form>
+            <template #footer>
+                <el-button @click="isPublishModalOpen = false">取消</el-button>
+                <el-button type="primary" @click="confirmPublish" :loading="isPublishing">确认发布</el-button>
+            </template>
+        </el-dialog>
+
+        <!-- 版本详情弹窗 -->
+        <el-dialog v-model="isVersionDetailOpen" title="版本详情" width="550px" align-center>
+            <div v-if="currentVersionDetail" class="space-y-5">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <el-tag size="default" :type="currentVersionDetail.status === 'published' ? 'warning' : 'info'" effect="light">
+                            {{ currentVersionDetail.status === 'published' ? '已发布/运行中' : '已归档' }}
+                        </el-tag>
+                        <div>
+                            <span class="text-base font-bold text-gray-800">{{ currentVersionDetail.version }}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <span class="text-xs font-bold text-gray-500">版本描述</span>
+                    <p class="text-sm text-gray-800 mt-1">{{ currentVersionDetail.description }}</p>
+                </div>
+                
+                <div>
+                    <span class="text-xs font-bold text-gray-500">发布时间</span>
+                    <p class="text-sm text-gray-800 mt-1">{{ currentVersionDetail.publishTime }}</p>
+                </div>
+                
+                <el-divider></el-divider>
+                
+                <div>
+                    <span class="text-xs font-bold text-gray-500">配置快照</span>
+                    <div class="bg-slate-900 text-green-400 p-4 rounded-lg mt-2 text-xs font-mono max-h-60 overflow-y-auto custom-scrollbar">
+                        <pre>{{ JSON.stringify(currentVersionDetail.snapshot, null, 2) }}</pre>
+                    </div>
+                </div>
+            </div>
+            <template #footer>
+                <el-button @click="isVersionDetailOpen = false">关闭</el-button>
+                <el-button v-if="currentVersionDetail && currentVersionDetail.status !== 'current'" type="primary" @click="rollbackToVersion(currentVersionDetail); isVersionDetailOpen = false;">覆盖当前草稿</el-button>
+            </template>
+        </el-dialog>
+
+    </div>
+
+    <script>
+        const { createApp, ref, computed, nextTick } = Vue;
+        const app = createApp({
+            setup() {
+                const isEventModalOpen = ref(false);
+                const isHistoryModalOpen = ref(false);
+                const selectedEvent = ref({ name: '', source: '', topic: '', cron: '', ip: '', eventId: '' });
+
+                const eventsList = ref([
+                    { id: 1, name: '电压过高告警预案触发', type: 'Pulsar', topic: 'persistent://electricity/alert/', status: true },
+                    { id: 2, name: '每周五能耗巡检定时启动', type: 'Timer', cron: '0 0 22 ? * FRI', status: true },
+                    { id: 3, name: '每日早班开机状态确认', type: 'Timer', cron: '0 30 8 ? * *', status: true }
+                ]);
+
+                const historyList = ref([
+                    {
+                        id: 'EVT-20231120-00129',
+                        timestamp: '2023-11-20 14:30:00',
+                        data: {
+                            "event_id": "EVT-20231120-00129",
+                            "trigger_time_ms": 1700463600000,
+                            "source_ip": "192.168.1.104",
+                            "payload": {
+                                "device": { "id": "V-Transf-A01", "Status": "运行中" },
+                                "metrics": { "V1": 285.3, "current": 12.4 }
+                            }
+                        }
+                    },
+                    {
+                        id: 'EVT-20231119-00087',
+                        timestamp: '2023-11-19 10:15:00',
+                        data: {
+                            "event_id": "EVT-20231119-00087",
+                            "trigger_time_ms": 1700374500000,
+                            "source_ip": "192.168.1.105",
+                            "payload": {
+                                "device": { "id": "V-Transf-B02", "Status": "运行中" },
+                                "metrics": { "V1": 248.7, "current": 10.2 }
+                            }
+                        }
+                    },
+                    {
+                        id: 'EVT-20231118-00056',
+                        timestamp: '2023-11-18 16:45:00',
+                        data: {
+                            "event_id": "EVT-20231118-00056",
+                            "trigger_time_ms": 1700297100000,
+                            "source_ip": "192.168.1.106",
+                            "payload": {
+                                "device": { "id": "V-Transf-C03", "Status": "运行中" },
+                                "metrics": { "V1": 250.2, "current": 8.7 }
+                            }
+                        }
+                    }
+                ]);
+                const selectEvent = (event) => {
+                    selectedEvent.value = { name: event.name, source: event.type, topic: event.topic, cron: event.cron, ip: event.ip || '10.0.1.2:6650', eventId: '' };
+                    isEventModalOpen.value = false;
+                };
+
+                const strategyRules = ref([]);
+                const defaultTarget = ref(['rule']);
+                
+                const handleDefaultTargetChange = (val) => {
+                    const hasNone = val.includes('none');
+                    const hasEngine = val.includes('rule') || val.includes('ai');
+                    
+                    if (hasNone && hasEngine) {
+                        const lastAdded = val[val.length - 1];
+                        if (lastAdded === 'none') {
+                            defaultTarget.value = ['none'];
+                        } else {
+                            defaultTarget.value = val.filter(v => v !== 'none');
+                        }
+                    } else if (!hasNone && val.length === 0) {
+                        defaultTarget.value = ['rule'];
+                    }
+                };
+                
+                const addCondition = (rIdx) => strategyRules.value[rIdx].conditions.push({ field: 'V1', op: '>', value: '' });
+                const removeCondition = (rIdx, cIdx) => strategyRules.value[rIdx].conditions.splice(cIdx, 1);
+                const addBranch = () => strategyRules.value.push({ target: ['rule'], logicOp: 'AND', conditions:[{ field: 'V1', op: '>', value: '' }] });
+                const hasBranches = computed(() => strategyRules.value.length > 0);
+                const removeBranch = (rIdx) => strategyRules.value.splice(rIdx, 1);
+
+                const enableRule = ref(true);
+                const enableAi = ref(true);
+                const ruleDialogVisible = ref(false);
+                const agentDialogVisible = ref(false);
+                const isEditMode = ref(false);
+
+                const rules = ref([]);
+                const agents = ref([]);
+
+                const removeRule = async (id) => {
+                    const rule = rules.value.find(r => r.id === id);
+                    if (!rule) return;
+                    
+                    try {
+                        await ElementPlus.ElMessageBox.confirm(
+                            `您确定要删除规则 "${rule.name}" 吗？此操作不可撤销。`,
+                            '确认删除',
+                            {
+                                confirmButtonText: '确认删除',
+                                cancelButtonText: '取消',
+                                type: 'warning',
+                                confirmButtonClass: 'el-button--danger'
+                            }
+                        );
+                        rules.value = rules.value.filter(r => r.id !== id);
+                    } catch {
+                        // 用户取消删除
+                    }
+                };
+                
+                const removeAgent = async (id) => {
+                    const agent = agents.value.find(a => a.id === id);
+                    if (!agent) return;
+                    
+                    try {
+                        await ElementPlus.ElMessageBox.confirm(
+                            `您确定要删除智能体 "${agent.name}" 吗？此操作不可撤销。`,
+                            '确认删除',
+                            {
+                                confirmButtonText: '确认删除',
+                                cancelButtonText: '取消',
+                                type: 'warning',
+                                confirmButtonClass: 'el-button--danger'
+                            }
+                        );
+                        agents.value = agents.value.filter(a => a.id !== id);
+                    } catch {
+                        // 用户取消删除
+                    }
+                };
+
+                const ruleOutputs = computed(() => {
+                    return rules.value.filter(r => r.active).map(r => r.actLabel).filter(Boolean);
+                });
+                const aiOutputs = computed(() => {
+                    return[...new Set(agents.value.filter(a => a.active).flatMap(a => a.tools))];
+                });
+
+                const isDuplicate = (act) => { return ruleOutputs.value.includes(act) && aiOutputs.value.includes(act); };
+
+                // 优化2: 规则引擎内部重复动作检测
+                const duplicateInRule = computed(() => {
+                    const acts = rules.value.filter(r => r.active).flatMap(r => r.acts);
+                    const seen = new Set();
+                    const duplicates = new Set();
+                    acts.forEach(act => {
+                        if (seen.has(act)) {
+                            duplicates.add(act);
+                        } else {
+                            seen.add(act);
+                        }
+                    });
+                    return [...duplicates];
+                });
+
+                // 优化2: AI引擎内部重复工具检测
+                const duplicateInAi = computed(() => {
+                    const tools = agents.value.filter(a => a.active).flatMap(a => a.tools);
+                    const seen = new Set();
+                    const duplicates = new Set();
+                    tools.forEach(tool => {
+                        if (seen.has(tool)) {
+                            duplicates.add(tool);
+                        } else {
+                            seen.add(tool);
+                        }
+                    });
+                    return [...duplicates];
+                });
+
+                const newRule = ref({ 
+                    id: null, 
+                    name: '', 
+                    logicOp: 'AND', 
+                    conditions:[], 
+                    selectedAction: ''
+                });
+                const addNewRuleCondition = () => newRule.value.conditions.push({ field: 'V1', op: '>', value: '' });
+                const removeNewRuleCondition = (cIndex) => { newRule.value.conditions.splice(cIndex, 1); };
+
+                const editRule = (rule) => {
+                    isEditMode.value = true;
+                    newRule.value = { 
+                        id: rule.id, 
+                        name: rule.name, 
+                        logicOp: 'AND', 
+                        conditions:[{ field: 'V1', op: '>', value: '250' }],
+                        selectedAction: rule.selectedAction || ''
+                    };
+                    if (rule.selectedAction && rule.workflowParams) {
+                        workflowParams.value = JSON.parse(JSON.stringify(rule.workflowParams));
+                    } else {
+                        workflowParams.value = [];
+                    }
+                    ruleDialogVisible.value = true;
+                };
+
+                const confirmRuleConfig = () => {
+                    let condStr = '';
+                    if (newRule.value.conditions.length > 0) {
+                        const logicStr = newRule.value.logicOp === 'AND' ? ' && ' : ' || ';
+                        condStr = newRule.value.conditions.map(c => `(${c.field} ${c.op} ${c.value})`).join(logicStr);
+                    }
+                    const selectedActionInfo = allActionTypes.value.find(a => a.value === newRule.value.selectedAction);
+                    const ruleData = {
+                        selectedAction: newRule.value.selectedAction,
+                        actLabel: selectedActionInfo ? selectedActionInfo.label : '',
+                        workflowParams: currentActionType.value === 'workflow' ? JSON.parse(JSON.stringify(workflowParams.value)) : []
+                    };
+                    if (isEditMode.value) {
+                        const idx = rules.value.findIndex(r => r.id === newRule.value.id);
+                        if(idx !== -1) {
+                            rules.value[idx].name = newRule.value.name;
+                            rules.value[idx].cond = condStr;
+                            Object.assign(rules.value[idx], ruleData);
+                        }
+                    } else {
+                        rules.value.push({ 
+                            id: Date.now(), 
+                            active: true, 
+                            name: newRule.value.name, 
+                            cond: condStr, 
+                            ...ruleData
+                        });
+                    }
+                    ruleDialogVisible.value = false;
+                    isEditMode.value = false;
+                };
+
+                const libraryAgents = ref([
+                    { id: 202, name: '能效诊断优化助手', model: 'Qwen-2.5-Turbo', desc: '根据电压功耗自动分析瓶颈', tools:['生成分析报表'] },
+                    { id: 203, name: '预测性维护分析师', model: 'GPT-4o', desc: '串联历史数据推演故障风险', tools:['下发预警通知', '生成维护计划'] }
+                ]);
+                const selectedAgents = ref([]);
+                const handleAgentSelection = (val) => selectedAgents.value = val;
+                const confirmBindAgent = () => {
+                    agents.value.push(...selectedAgents.value.map(a => ({ ...a, active: true })));
+                    agentDialogVisible.value = false;
+                    selectedAgents.value =[];
+                };
+
+                const actionPopoverRef = ref(null);
+                const actionTabActive = ref('api');
+                
+                const apiExecutorList = [
+                    { label: '调用外部RESTful接口 - 设备控制API', value: 'api_device_control', method: 'POST' },
+                    { label: '调用外部RESTful接口 - 数据查询API', value: 'api_data_query', method: 'GET' },
+                    { label: '调用外部RESTful接口 - 工单创建API', value: 'api_workorder_create', method: 'POST' },
+                    { label: '调用外部RESTful接口 - 报警上报API', value: 'api_alert_report', method: 'POST' },
+                ];
+                
+                const protocolList = [
+                    { label: 'Modbus TCP - 写寄存器指令', value: 'modbus_write_register', protocol: 'Modbus' },
+                    { label: 'Modbus RTU - 读线圈指令', value: 'modbus_read_coil', protocol: 'Modbus' },
+                    { label: 'MQTT - 发布控制指令', value: 'mqtt_publish_cmd', protocol: 'MQTT' },
+                    { label: 'MQTT - 订阅设备状态', value: 'mqtt_subscribe_status', protocol: 'MQTT' },
+                    { label: 'OPC UA - 节点写入指令', value: 'opcua_write_node', protocol: 'OPC UA' },
+                ];
+                
+                const workflowList = [
+                    { label: '执行平台工作流 - 设备检修流程', value: 'wf_device_maintenance', category: '检修' },
+                    { label: '执行平台工作流 - 故障诊断流程', value: 'wf_fault_diagnosis', category: '诊断' },
+                    { label: '执行平台工作流 - 能耗优化流程', value: 'wf_energy_optimize', category: '优化' },
+                ];
+                
+                const notificationList = [
+                    { label: '钉钉群机器人通知', value: 'notif_dingtalk', channel: '钉钉' },
+                    { label: '短信通知 - 运维人员', value: 'notif_sms_operator', channel: '短信' },
+                    { label: '邮件通知 - 告警汇总', value: 'notif_email_alert', channel: '邮件' },
+                    { label: '企业微信通知', value: 'notif_wecom', channel: '企业微信' },
+                ];
+                
+                const allActionTypes = computed(() => {
+                    return [
+                        ...apiExecutorList.map(a => ({ ...a, type: 'api' })),
+                        ...protocolList.map(a => ({ ...a, type: 'protocol' })),
+                        ...workflowList.map(a => ({ ...a, type: 'workflow' })),
+                        ...notificationList.map(a => ({ ...a, type: 'notification' })),
+                    ];
+                });
+                
+                const selectedActionLabel = computed(() => {
+                    if (!newRule.value.selectedAction) return '';
+                    const found = allActionTypes.value.find(a => a.value === newRule.value.selectedAction);
+                    return found ? found.label : '';
+                });
+                
+                const workflowParams = ref([]);
+
+                const workflowParamTemplates = {
+                    wf_device_maintenance: [
+                        { paramName: 'equipment_id', desc: '设备编号', type: 'String', required: true, mapType: 'event', sourcePath: '', fixedValue: '', showFieldPicker: false },
+                        { paramName: 'status', desc: '设备状态', type: 'String', required: true, mapType: 'event', sourcePath: '', fixedValue: '', showFieldPicker: false },
+                        { paramName: 'power', desc: '设备电量', type: 'Number', required: false, mapType: 'event', sourcePath: '', fixedValue: '', showFieldPicker: false },
+                    ],
+                    wf_fault_diagnosis: [
+                        { paramName: 'equipment_id', desc: '故障设备标识', type: 'String', required: true, mapType: 'event', sourcePath: '', fixedValue: '', showFieldPicker: false },
+                        { paramName: 'fault_desc', desc: '故障简要描述', type: 'String', required: true, mapType: 'event', sourcePath: '', fixedValue: '', showFieldPicker: false },
+                        { paramName: 'voltage', desc: '异常电压数据', type: 'Number', required: false, mapType: 'event', sourcePath: '', fixedValue: '', showFieldPicker: false },
+                    ],
+                    wf_energy_optimize: [
+                        { paramName: 'equipment_id', desc: '能耗设备标识', type: 'String', required: true, mapType: 'event', sourcePath: '', fixedValue: '', showFieldPicker: false },
+                        { paramName: 'current_voltage', desc: '当前电压读数', type: 'Number', required: true, mapType: 'event', sourcePath: '', fixedValue: '', showFieldPicker: false },
+                        { paramName: 'optimize_strategy', desc: '优化策略类型', type: 'String', required: false, mapType: 'fixed', sourcePath: '', fixedValue: 'auto', showFieldPicker: false },
+                    ],
+                };
+
+                const currentActionType = computed(() => {
+                    if (!newRule.value.selectedAction) return '';
+                    const found = allActionTypes.value.find(a => a.value === newRule.value.selectedAction);
+                    return found ? found.type : '';
+                });
+
+                const loadWorkflowParams = (workflowValue) => {
+                    const template = workflowParamTemplates[workflowValue];
+                    if (template) {
+                        workflowParams.value = JSON.parse(JSON.stringify(template));
+                    } else {
+                        workflowParams.value = [];
+                    }
+                };
+                
+                const selectAction = (action) => {
+                    newRule.value.selectedAction = action.value;
+                    const actionInfo = allActionTypes.value.find(a => a.value === action.value);
+                    if (actionInfo && actionInfo.type === 'workflow') {
+                        loadWorkflowParams(action.value);
+                    } else {
+                        workflowParams.value = [];
+                    }
+                    actionPopoverRef.value?.hide();
+                };
+
+                const activeTab = ref('mock');
+                const isRunning = ref(false);
+                const mockJson = ref('');
+                const mockLogs = ref([]);
+                const isListening = ref(false);
+                const realtimeLogs = ref([]);
+                let mockInterval = null;
+
+                // 版本管理相关状态
+                const isVersionModalOpen = ref(false);
+                const isVersionDetailOpen = ref(false);
+                const currentVersionDetail = ref(null);
+                const versionList = ref([
+                    {
+                        id: 1,
+                        version: 'v1.0.3',
+                        description: '修复分支条件逻辑',
+                        status: 'published',
+                        publishTime: '2026-04-14 13:50:58',
+                        snapshot: {
+                            triggerEvent: '电表电压过高处理',
+                            branches: 1,
+                            rules: ['自动生成设备检修工单', '发送告警通知'],
+                            agents: ['故障深度诊断专家']
+                        }
+                    },
+                    {
+                        id: 2,
+                        version: 'v1.0.1',
+                        description: '初始版本',
+                        status: 'published',
+                        publishTime: '2026-04-10 09:30:00',
+                        snapshot: {
+                            triggerEvent: '电表电压过高处理',
+                            branches: 1,
+                            rules: ['自动生成设备检修工单'],
+                            agents: ['故障深度诊断专家']
+                        }
+                    }
+                ]);
+
+                const currentPublishedVersion = computed(() => {
+                    return versionList.value.find(v => v.status === 'published') || null;
+                });
+
+                const historyVersions = computed(() => {
+                    return versionList.value.filter(v => v.id !== currentPublishedVersion.value?.id);
+                });
+
+                const viewVersionDetail = (version) => {
+                    currentVersionDetail.value = version;
+                    isVersionDetailOpen.value = true;
+                };
+
+                const rollbackToVersion = (version) => {
+                    ElMessageBox.confirm(
+                        `确定要将版本 ${version.version} 的配置覆盖到当前草稿吗？此操作不可撤销。`,
+                        '覆盖当前草稿',
+                        {
+                            confirmButtonText: '确定',
+                            cancelButtonText: '取消',
+                            type: 'warning'
+                        }
+                    ).then(() => {
+                        ElementPlus.ElMessage({
+                            message: `已成功将 ${version.version} 的配置覆盖到当前草稿`,
+                            type: 'success',
+                            duration: 3000
+                        });
+                        isVersionModalOpen.value = false;
+                    }).catch(() => {});
+                };
+
+                // 发布相关状态
+                const isPublishModalOpen = ref(false);
+                const isPublishing = ref(false);
+                const publishFormRef = ref(null);
+                const publishForm = ref({
+                    version: '',
+                    description: ''
+                });
+                const publishRules = {
+                    version: [
+                        { required: true, message: '请输入版本号', trigger: 'blur' }
+                    ],
+                    description: [
+                        { required: true, message: '请输入版本描述', trigger: 'blur' }
+                    ]
+                };
+
+                const confirmPublish = async () => {
+                    const valid = await publishFormRef.value.validate().catch(() => false);
+                    if (!valid) return;
+
+                    isPublishing.value = true;
+
+                    // 将旧运行中版本降级为历史版本
+                    const oldPublished = versionList.value.find(v => v.status === 'published');
+                    if (oldPublished) {
+                        oldPublished.status = 'archived';
+                    }
+
+                    const now = new Date();
+                    const timeStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+
+                    // 创建新版本
+                    const newVersion = {
+                        id: Date.now(),
+                        version: publishForm.value.version,
+                        description: publishForm.value.description,
+                        status: 'published',
+                        publishTime: timeStr,
+                        snapshot: {
+                            triggerEvent: selectedEvent.value.name,
+                            branches: strategyRules.value.length,
+                            rules: rules.value.map(r => r.name),
+                            agents: agents.value.map(a => a.name)
+                        }
+                    };
+                    versionList.value.unshift(newVersion);
+
+                    ElementPlus.ElMessage({
+                        message: '发布成功',
+                        type: 'success',
+                        duration: 3000
+                    });
+
+                    isPublishModalOpen.value = false;
+                    isPublishing.value = false;
+
+                    // 重置表单
+                    publishForm.value.version = '';
+                    publishForm.value.description = '';
+                };
+
+                const getTimeString = () => {
+                    const now = new Date();
+                    return `[${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}]`;
+                };
+                const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+                const pushMockLog = (htmlStr, colorClass = '') => {
+                    mockLogs.value.push({ html: htmlStr, colorClass });
+                    nextTick(() => { const el = document.getElementById('mock-console'); if(el) el.scrollTop = el.scrollHeight; });
+                };
+
+                const pushRealtimeLog = (htmlStr, colorClass = '') => {
+                    realtimeLogs.value.push({ html: htmlStr, colorClass });
+                    nextTick(() => { const el = document.getElementById('realtime-console'); if(el) el.scrollTop = el.scrollHeight; });
+                };
+
+                const loadHistoryData = () => {
+                    if (!selectedEvent.value.name) {
+                        pushMockLog(`${getTimeString()} ⚠️ 请先选择一个事件`, 'text-yellow-400');
+                        return;
+                    }
+                    isHistoryModalOpen.value = true;
+                };
+
+                const selectHistoryData = (history) => {
+                    mockJson.value = JSON.stringify(history.data, null, 4);
+                    selectedEvent.value.eventId = history.data?.event_id || '';
+                    isHistoryModalOpen.value = false;
+                };
+
+                const runMockTest = async () => {
+                    if(isRunning.value) return;
+                    isRunning.value = true;
+                    mockLogs.value =[]; 
+                    const t = getTimeString();
+                    
+                    let parsedData;
+                    try { parsedData = JSON.parse(mockJson.value); } 
+                    catch(e) { pushMockLog(`${t}  JSON 解析失败: ${e.message}`, 'text-red-400'); isRunning.value = false; return; }
+                    
+                    const eventId = parsedData?.event_id || '';
+                    const eidTag = eventId ? ` <span class="italic text-slate-400">【${eventId}】</span>` : '';
+
+                    // 【事件触发】
+                    pushMockLog(`${t} <span class="text-green-400 font-bold">【事件触发】</span>${eidTag}`, 'text-slate-300');
+                    pushMockLog(`&nbsp;&nbsp;&nbsp;&nbsp;• 接收到 <span class="text-yellow-300 font-bold border border-yellow-400/40 px-1 rounded text-[11px]">${selectedEvent.value.name || '设备电压越限'}</span> 事件数据`, 'text-slate-400');
+                    
+                    await sleep(500);
+                    // 【事件分发】
+                    pushMockLog(`${t} <span class="text-green-400 font-bold">【事件分发】</span>${eidTag}`, 'text-slate-300');
+                    const v1 = parsedData?.payload?.metrics?.V1 || 0;
+                    pushMockLog(`&nbsp;&nbsp;&nbsp;&nbsp;• 命中 分支1 (V1 > 280)，事件分发至 <span class="text-blue-300 font-bold border border-blue-400/40 px-1 rounded text-[11px]">规则引擎</span> <span class="text-purple-300 font-bold border border-purple-400/40 px-1 rounded text-[11px]">自适应引擎</span>`, 'text-slate-400');
+                    
+                    await sleep(600);
+                    // 【事件处理】
+                    pushMockLog(`${t} <span class="text-green-400 font-bold">【事件处理】</span>${eidTag}`, 'text-slate-300');
+                    await sleep(500);
+                    const t1 = getTimeString();
+                    pushMockLog(`&nbsp;&nbsp;&nbsp;&nbsp;• ${t1} 规则 <span class="text-cyan-300 font-bold border border-cyan-400/40 px-1 rounded text-[11px]">自动生成设备检修工单</span> 执行动作 <span class="text-orange-300 font-bold border border-orange-400/40 px-1 rounded text-[11px]">生成工单</span>`, 'text-slate-400');
+                    await sleep(300);
+                    const t2 = getTimeString();
+                    pushMockLog(`&nbsp;&nbsp;&nbsp;&nbsp;• ${t2} 规则 <span class="text-cyan-300 font-bold border border-cyan-400/40 px-1 rounded text-[11px]">自动生成设备检修工单</span> 执行动作 <span class="text-orange-300 font-bold border border-orange-400/40 px-1 rounded text-[11px]">发送通知</span>`, 'text-slate-400');
+                    await sleep(800);
+                    const t3 = getTimeString();
+                    pushMockLog(`&nbsp;&nbsp;&nbsp;&nbsp;• ${t3} 智能体 <span class="text-violet-300 font-bold border border-violet-400/40 px-1 rounded text-[11px]">故障深度诊断专家</span> 执行动作 <span class="text-orange-300 font-bold border border-orange-400/40 px-1 rounded text-[11px]">发送常规告警</span>`, 'text-slate-400');
+                    await sleep(1200);
+                    const t4 = getTimeString();
+                    pushMockLog(`&nbsp;&nbsp;&nbsp;&nbsp;• ${t4} 智能体 <span class="text-violet-300 font-bold border border-violet-400/40 px-1 rounded text-[11px]">故障深度诊断专家</span> 执行动作 <span class="text-orange-300 font-bold border border-orange-400/40 px-1 rounded text-[11px]">生成高级维修建议</span>`, 'text-slate-400');
+                    
+                    await sleep(500);
+                    // 【执行完毕】
+                    const doneTime = getTimeString();
+                    pushMockLog(`${doneTime} <span class="text-green-400 font-bold">【执行完毕】</span>${eidTag}`, 'text-slate-300');
+                    isRunning.value = false;
+                };
+
+                const processOneEvent = async (eid, eidTag, isFirst = true) => {
+                    const t = getTimeString();
+                    pushRealtimeLog(`${t} <span class="text-green-400 font-bold">【事件触发】</span>${eidTag}`, isFirst ? 'text-slate-300 mb-2' : 'text-slate-300');
+                    await sleep(500);
+                    pushRealtimeLog(`&nbsp;&nbsp;&nbsp;&nbsp;• 接收到 <span class="text-yellow-300 font-bold border border-yellow-400/40 px-1 rounded text-[11px]">电压过高告警预案触发</span> 事件数据`, 'text-slate-400 mb-4');
+                    
+                    await sleep(300);
+                    pushRealtimeLog(`${t} <span class="text-green-400 font-bold">【事件分发】</span>${eidTag}`, 'text-slate-300 mb-2');
+                    await sleep(300);
+                    pushRealtimeLog(`&nbsp;&nbsp;&nbsp;&nbsp;• 命中 分支1 (V1 > 280)，事件分发至 <span class="text-blue-300 font-bold border border-blue-400/40 px-1 rounded text-[11px]">规则引擎</span> <span class="text-purple-300 font-bold border border-purple-400/40 px-1 rounded text-[11px]">自适应引擎</span>`, 'text-slate-400 mb-4');
+                    
+                    await sleep(400);
+                    pushRealtimeLog(`${t} <span class="text-green-400 font-bold">【事件处理】</span>${eidTag}`, 'text-slate-300 mb-2');
+                    await sleep(800);
+                    const rt1 = getTimeString();
+                    pushRealtimeLog(`&nbsp;&nbsp;&nbsp;&nbsp;• ${rt1} 规则 <span class="text-cyan-300 font-bold border border-cyan-400/40 px-1 rounded text-[11px]">自动生成设备检修工单</span> 执行动作 <span class="text-orange-300 font-bold border border-orange-400/40 px-1 rounded text-[11px]">生成工单</span>`, 'text-slate-400 mb-1');
+                    await sleep(500);
+                    const rt2 = getTimeString();
+                    pushRealtimeLog(`&nbsp;&nbsp;&nbsp;&nbsp;• ${rt2} 规则 <span class="text-cyan-300 font-bold border border-cyan-400/40 px-1 rounded text-[11px]">自动生成设备检修工单</span> 执行动作 <span class="text-orange-300 font-bold border border-orange-400/40 px-1 rounded text-[11px]">发送通知</span>`, 'text-slate-400 mb-1');
+                    await sleep(1200);
+                    const rt3 = getTimeString();
+                    pushRealtimeLog(`&nbsp;&nbsp;&nbsp;&nbsp;• ${rt3} 智能体 <span class="text-violet-300 font-bold border border-violet-400/40 px-1 rounded text-[11px]">故障深度诊断专家</span> 执行动作 <span class="text-orange-300 font-bold border border-orange-400/40 px-1 rounded text-[11px]">发送常规告警</span>`, 'text-slate-400 mb-1');
+                    await sleep(1500);
+                    const rt4 = getTimeString();
+                    pushRealtimeLog(`&nbsp;&nbsp;&nbsp;&nbsp;• ${rt4} 智能体 <span class="text-violet-300 font-bold border border-violet-400/40 px-1 rounded text-[11px]">故障深度诊断专家</span> 执行动作 <span class="text-orange-300 font-bold border border-orange-400/40 px-1 rounded text-[11px]">生成高级维修建议</span>`, 'text-slate-400 mb-4');
+                    
+                    await sleep(500);
+                    const doneTime = getTimeString();
+                    pushRealtimeLog(`${doneTime} <span class="text-green-400 font-bold">【执行完毕】</span>${eidTag}`, 'text-slate-300 mb-6');
+                };
+
+                const toggleListening = async () => {
+                    if(isListening.value) {
+                        const genEid = () => `EVT-${new Date().toISOString().slice(0,10).replace(/-/g,'')}-${String(Math.floor(Math.random()*90000)+10000)}`;
+                        
+                        // 第一个事件
+                        const eid = genEid();
+                        const eidTag = ` <span class="italic text-slate-400">【${eid}】</span>`;
+                        await processOneEvent(eid, eidTag, true);
+                        
+                        mockInterval = setInterval(async () => {
+                            if(Math.random() > 0.3 && isListening.value) {
+                                const rt = getTimeString();
+                                const eid2 = genEid();
+                                const eidTag2 = ` <span class="italic text-slate-400">【${eid2}】</span>`;
+                                await processOneEvent(eid2, eidTag2, false);
+                            }
+                        }, 5000);
+                    } else {
+                        clearInterval(mockInterval);
+                    }
+                };
+
+                // 优化6: 从示例数据中自动提取可用字段
+                const availableFields = computed(() => {
+                    if (!mockJson.value) return [];
+                    try {
+                        const data = JSON.parse(mockJson.value);
+                        const fields = new Set();
+                        
+                        // 递归提取所有字段路径
+                        const extractKeys = (obj, prefix = '') => {
+                            if (obj && typeof obj === 'object') {
+                                Object.keys(obj).forEach(key => {
+                                    const fullPath = prefix ? `${prefix}.${key}` : key;
+                                    fields.add(fullPath);
+                                    extractKeys(obj[key], fullPath);
+                                });
+                            }
+                        };
+                        
+                        extractKeys(data.payload || data);
+                        return [...fields];
+                    } catch (e) {
+                        return [];
+                    }
+                });
+
+                return {
+                    isEventModalOpen, eventsList, selectedEvent, selectEvent,
+                    strategyRules, defaultTarget, handleDefaultTargetChange, addCondition, removeCondition, addBranch, removeBranch,
+                    enableRule, enableAi, rules, agents, removeRule, removeAgent,
+                    ruleOutputs, aiOutputs, isDuplicate, duplicateInRule, duplicateInAi, 
+                    availableFields,
+                    ruleDialogVisible, agentDialogVisible, isEditMode,
+                    newRule, actionTabActive, apiExecutorList, protocolList, workflowList, notificationList, allActionTypes, selectedActionLabel, selectAction, actionPopoverRef,
+                    workflowParams, currentActionType,
+                    addNewRuleCondition, removeNewRuleCondition, editRule, confirmRuleConfig,
+                    libraryAgents, selectedAgents, handleAgentSelection, confirmBindAgent,
+                    activeTab, isRunning, mockJson, mockLogs, isListening, realtimeLogs,
+                    isHistoryModalOpen, historyList, loadHistoryData, selectHistoryData,
+                    runMockTest, toggleListening,
+                    isVersionModalOpen, isVersionDetailOpen, currentVersionDetail, versionList,
+                    currentPublishedVersion, historyVersions,
+                    viewVersionDetail, rollbackToVersion,
+                    isPublishModalOpen, isPublishing, publishFormRef, publishForm, publishRules, confirmPublish
+                }
+            }
+        });
+        
+        for (const [key, component] of Object.entries(ElementPlusIconsVue)) { app.component(key, component); }
+        app.use(ElementPlus);
+        app.mount('#app');
+    </script>
+</body>
+</html>
