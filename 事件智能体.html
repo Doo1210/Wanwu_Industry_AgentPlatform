@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿<html lang="zh-CN">
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -276,19 +276,26 @@
                                         </div>
                                         <div class="flex-1 space-y-2">
                                             <div v-for="(cond, cIndex) in rule.conditions" :key="cIndex" class="flex items-center gap-2 compact-el">
-                                                <el-select v-model="cond.field" size="small" style="width: 110px" filterable>
+                                                <el-select v-model="cond.field" size="small" style="width: 140px" filterable @change="cond.op = ''; cond.value = ''" placeholder="选择字段">
                                                     <el-option label="-- 从输入数据选择 --" value="" disabled v-if="availableFields.length > 0"></el-option>
-                                                    <el-option v-for="field in availableFields" :key="field" :label="field" :value="field"></el-option>
-                                                    <el-option label="电压 (V1)" value="V1"></el-option>
-                                                    <el-option label="状态 (Status)" value="Status"></el-option>
+                                                    <el-option v-for="field in availableFields" :key="field.name" :label="field.name" :value="field.name">
+                                                        <span>{{ field.name }}</span>
+                                                        <span class="ml-2 px-1.5 py-0.5 rounded text-[10px] font-bold" :class="{
+                                                            'bg-blue-100 text-blue-700': field.type === 'number',
+                                                            'bg-purple-100 text-purple-700': field.type === 'boolean',
+                                                            'bg-orange-100 text-orange-700': field.type === 'string',
+                                                            'bg-gray-100 text-gray-600': field.type === 'null'
+                                                        }">{{ field.type === 'number' ? 'Number' : field.type === 'boolean' ? 'Boolean' : field.type === 'null' ? 'Null' : 'String' }}</span>
+                                                    </el-option>
                                                 </el-select>
-                                                <el-select v-model="cond.op" size="small" style="width: 90px">
-                                                    <el-option label="大于 (>)" value=""></el-option>
-                                                    <el-option label="等于 (==)" value="=="></el-option>
-                                                    <el-option label="小于 (<)" value="<"></el-option>
-                                                    <el-option label="包含" value="contains"></el-option>
+                                                <el-select v-model="cond.op" size="small" style="width: 110px" placeholder="选择条件">
+                                                    <el-option v-for="op in getFieldOperators(getFieldType(cond.field))" :key="op.value" :label="op.label" :value="op.value"></el-option>
                                                 </el-select>
-                                                <el-input v-model="cond.value" size="small" placeholder="值" style="flex: 1; min-width: 60px;"></el-input>
+                                                <el-input v-if="needsValueInput(cond.op) && getFieldType(cond.field) !== 'boolean'" v-model="cond.value" size="small" placeholder="输入值" style="flex: 1; min-width: 60px;"></el-input>
+                                                <el-select v-if="needsValueInput(cond.op) && getFieldType(cond.field) === 'boolean'" v-model="cond.value" size="small" placeholder="选择值" style="flex: 1; min-width: 80px;">
+                                                    <el-option label="是 (True)" value="true"></el-option>
+                                                    <el-option label="否 (False)" value="false"></el-option>
+                                                </el-select>
                                                 <div class="flex items-center shrink-0">
                                                     <el-button v-if="cIndex === rule.conditions.length - 1" type="primary" link icon="CirclePlus" size="small" @click="addCondition(index)"></el-button>
                                                     <el-button v-if="rule.conditions.length > 1" type="danger" link icon="Remove" size="small" @click="removeCondition(index, cIndex)"></el-button>
@@ -677,14 +684,26 @@
                         </div>
                         <div class="flex-1 space-y-2">
                             <div v-for="(cond, cIndex) in newRule.conditions" :key="cIndex" class="flex items-center gap-2 compact-el">
-                                <el-select v-model="cond.field" size="small" style="width: 120px" filterable>
+                                <el-select v-model="cond.field" size="small" style="width: 140px" filterable @change="cond.op = ''; cond.value = ''" placeholder="选择字段">
                                     <el-option label="-- 从输入数据选择 --" value="" disabled v-if="availableFields.length > 0"></el-option>
-                                    <el-option v-for="field in availableFields" :key="field" :label="field" :value="field"></el-option>
-                                    <el-option label="电压 (V1)" value="V1"></el-option>
-                                    <el-option label="设备状态 (Status)" value="Status"></el-option>
+                                    <el-option v-for="field in availableFields" :key="field.name" :label="field.name" :value="field.name">
+                                        <span>{{ field.name }}</span>
+                                        <span class="ml-2 px-1.5 py-0.5 rounded text-[10px] font-bold" :class="{
+                                            'bg-blue-100 text-blue-700': field.type === 'number',
+                                            'bg-purple-100 text-purple-700': field.type === 'boolean',
+                                            'bg-orange-100 text-orange-700': field.type === 'string',
+                                            'bg-gray-100 text-gray-600': field.type === 'null'
+                                        }">{{ field.type === 'number' ? 'Number' : field.type === 'boolean' ? 'Boolean' : field.type === 'null' ? 'Null' : 'String' }}</span>
+                                    </el-option>
                                 </el-select>
-                                <el-select v-model="cond.op" size="small" style="width: 100px"><el-option label="大于 (>)" value=""></el-option><el-option label="等于 (==)" value="=="></el-option><el-option label="小于 (<)" value="<"></el-option></el-select>
-                                <el-input v-model="cond.value" size="small" placeholder="值" style="flex: 1; min-width: 60px;"></el-input>
+                                <el-select v-model="cond.op" size="small" style="width: 110px" placeholder="选择条件">
+                                    <el-option v-for="op in getFieldOperators(getFieldType(cond.field))" :key="op.value" :label="op.label" :value="op.value"></el-option>
+                                </el-select>
+                                <el-input v-if="needsValueInput(cond.op) && getFieldType(cond.field) !== 'boolean'" v-model="cond.value" size="small" placeholder="输入值" style="flex: 1;"></el-input>
+                                <el-select v-if="needsValueInput(cond.op) && getFieldType(cond.field) === 'boolean'" v-model="cond.value" size="small" placeholder="选择值" style="flex: 1;">
+                                    <el-option label="是 (True)" value="true"></el-option>
+                                    <el-option label="否 (False)" value="false"></el-option>
+                                </el-select>
                                 <div class="flex items-center shrink-0">
                                     <el-button v-if="newRule.conditions.length >= 1" type="danger" link icon="Remove" size="small" @click="removeNewRuleCondition(cIndex)"></el-button>
                                 </div>
@@ -1029,8 +1048,35 @@
                             "trigger_time_ms": 1700463600000,
                             "source_ip": "192.168.1.104",
                             "payload": {
-                                "device": { "id": "V-Transf-A01", "Status": "运行中" },
-                                "metrics": { "V1": 285.3, "current": 12.4 }
+                                "device": {
+                                    "id": "V-Transf-A01",
+                                    "name": "1号变压器",
+                                    "Status": "运行中",
+                                    "is_online": true,
+                                    "error_code": null,
+                                    "firmware_version": "v2.3.1",
+                                    "last_maintenance_date": "2023-10-15"
+                                },
+                                "metrics": {
+                                    "V1": 285.3,
+                                    "V2": 283.7,
+                                    "current": 12.4,
+                                    "power": 3538.5,
+                                    "temperature": 65.8,
+                                    "humidity": 45.2,
+                                    "rpm": 1450
+                                },
+                                "alarm": {
+                                    "is_triggered": true,
+                                    "level": "严重",
+                                    "description": "电压超过阈值280V",
+                                    "acknowledged": false
+                                },
+                                "location": {
+                                    "building": "A栋",
+                                    "floor": 3,
+                                    "room": "配电室301"
+                                }
                             }
                         }
                     },
@@ -1042,8 +1088,35 @@
                             "trigger_time_ms": 1700374500000,
                             "source_ip": "192.168.1.105",
                             "payload": {
-                                "device": { "id": "V-Transf-B02", "Status": "运行中" },
-                                "metrics": { "V1": 248.7, "current": 10.2 }
+                                "device": {
+                                    "id": "V-Transf-B02",
+                                    "name": "2号变压器",
+                                    "Status": "运行中",
+                                    "is_online": true,
+                                    "error_code": null,
+                                    "firmware_version": "v2.3.1",
+                                    "last_maintenance_date": "2023-09-20"
+                                },
+                                "metrics": {
+                                    "V1": 248.7,
+                                    "V2": 249.1,
+                                    "current": 10.2,
+                                    "power": 2536.7,
+                                    "temperature": 52.3,
+                                    "humidity": 50.1,
+                                    "rpm": 1420
+                                },
+                                "alarm": {
+                                    "is_triggered": false,
+                                    "level": "",
+                                    "description": "",
+                                    "acknowledged": true
+                                },
+                                "location": {
+                                    "building": "B栋",
+                                    "floor": 2,
+                                    "room": "配电室201"
+                                }
                             }
                         }
                     },
@@ -1055,8 +1128,35 @@
                             "trigger_time_ms": 1700297100000,
                             "source_ip": "192.168.1.106",
                             "payload": {
-                                "device": { "id": "V-Transf-C03", "Status": "运行中" },
-                                "metrics": { "V1": 250.2, "current": 8.7 }
+                                "device": {
+                                    "id": "V-Transf-C03",
+                                    "name": "3号变压器",
+                                    "Status": "待机",
+                                    "is_online": false,
+                                    "error_code": "ERR_TIMEOUT",
+                                    "firmware_version": "v2.2.0",
+                                    "last_maintenance_date": "2023-08-10"
+                                },
+                                "metrics": {
+                                    "V1": 0,
+                                    "V2": 0,
+                                    "current": 0,
+                                    "power": 0,
+                                    "temperature": 28.5,
+                                    "humidity": 55.0,
+                                    "rpm": 0
+                                },
+                                "alarm": {
+                                    "is_triggered": true,
+                                    "level": "警告",
+                                    "description": "设备离线",
+                                    "acknowledged": false
+                                },
+                                "location": {
+                                    "building": "C栋",
+                                    "floor": 1,
+                                    "room": "配电室102"
+                                }
                             }
                         }
                     }
@@ -1085,9 +1185,9 @@
                     }
                 };
                 
-                const addCondition = (rIdx) => strategyRules.value[rIdx].conditions.push({ field: 'V1', op: '>', value: '' });
+                const addCondition = (rIdx) => strategyRules.value[rIdx].conditions.push({ field: '', op: '', value: '' });
                 const removeCondition = (rIdx, cIdx) => strategyRules.value[rIdx].conditions.splice(cIdx, 1);
-                const addBranch = () => strategyRules.value.push({ target: ['rule'], logicOp: 'AND', conditions:[{ field: 'V1', op: '>', value: '' }] });
+                const addBranch = () => strategyRules.value.push({ target: ['rule'], logicOp: 'AND', conditions:[{ field: '', op: '', value: '' }] });
                 const hasBranches = computed(() => strategyRules.value.length > 0);
                 const removeBranch = (rIdx) => strategyRules.value.splice(rIdx, 1);
 
@@ -1188,7 +1288,7 @@
                     conditions:[], 
                     selectedAction: ''
                 });
-                const addNewRuleCondition = () => newRule.value.conditions.push({ field: 'V1', op: '>', value: '' });
+                const addNewRuleCondition = () => newRule.value.conditions.push({ field: '', op: '', value: '' });
                 const removeNewRuleCondition = (cIndex) => { newRule.value.conditions.splice(cIndex, 1); };
 
                 const editRule = (rule) => {
@@ -1197,7 +1297,7 @@
                         id: rule.id, 
                         name: rule.name, 
                         logicOp: 'AND', 
-                        conditions:[{ field: 'V1', op: '>', value: '250' }],
+                        conditions:[],
                         selectedAction: rule.selectedAction || ''
                     };
                     if (rule.selectedAction && rule.workflowParams) {
@@ -1346,7 +1446,42 @@
 
                 const activeTab = ref('mock');
                 const isRunning = ref(false);
-                const mockJson = ref('');
+                const mockJson = ref(`{
+  "event_id": "EVT-20231120-00129",
+  "trigger_time_ms": 1700463600000,
+  "source_ip": "192.168.1.104",
+  "payload": {
+    "device": {
+      "id": "V-Transf-A01",
+      "name": "1号变压器",
+      "Status": "运行中",
+      "is_online": true,
+      "error_code": null,
+      "firmware_version": "v2.3.1",
+      "last_maintenance_date": "2023-10-15"
+    },
+    "metrics": {
+      "V1": 285.3,
+      "V2": 283.7,
+      "current": 12.4,
+      "power": 3538.5,
+      "temperature": 65.8,
+      "humidity": 45.2,
+      "rpm": 1450
+    },
+    "alarm": {
+      "is_triggered": true,
+      "level": "严重",
+      "description": "电压超过阈值280V",
+      "acknowledged": false
+    },
+    "location": {
+      "building": "A栋",
+      "floor": 3,
+      "room": "配电室301"
+    }
+  }
+}`);
                 const mockLogs = ref([]);
                 const isListening = ref(false);
                 const realtimeLogs = ref([]);
@@ -1608,20 +1743,34 @@
                     }
                 };
 
-                // 优化6: 从示例数据中自动提取可用字段
+                // 优化6: 从示例数据中自动提取可用字段（包含字段名和类型）
                 const availableFields = computed(() => {
                     if (!mockJson.value) return [];
                     try {
                         const data = JSON.parse(mockJson.value);
                         const fields = new Set();
                         
-                        // 递归提取所有字段路径
                         const extractKeys = (obj, prefix = '') => {
-                            if (obj && typeof obj === 'object') {
+                            if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
                                 Object.keys(obj).forEach(key => {
                                     const fullPath = prefix ? `${prefix}.${key}` : key;
-                                    fields.add(fullPath);
-                                    extractKeys(obj[key], fullPath);
+                                    const value = obj[key];
+                                    let fieldType = 'string';
+                                    
+                                    if (typeof value === 'boolean') {
+                                        fieldType = 'boolean';
+                                    } else if (typeof value === 'number') {
+                                        fieldType = 'number';
+                                    } else if (value === null || value === undefined) {
+                                        fieldType = 'string';
+                                    } else if (Array.isArray(value)) {
+                                        fieldType = 'array';
+                                    } else if (typeof value === 'object') {
+                                        extractKeys(value, fullPath);
+                                        return;
+                                    }
+                                    
+                                    fields.add({ name: fullPath, type: fieldType });
                                 });
                             }
                         };
@@ -1633,12 +1782,64 @@
                     }
                 });
 
+                // 根据字段类型获取对应的逻辑条件选项
+                const getFieldOperators = (fieldType) => {
+                    const stringOps = [
+                        { label: '等于', value: '==' },
+                        { label: '不等于', value: '!=' },
+                        { label: '包含', value: 'contains' },
+                        { label: '不包含', value: 'not_contains' },
+                        { label: '长度大于', value: 'length_gt' },
+                        { label: '长度大于等于', value: 'length_gte' },
+                        { label: '长度小于', value: 'length_lt' },
+                        { label: '长度小于等于', value: 'length_lte' },
+                        { label: '为空', value: 'is_empty' },
+                        { label: '不为空', value: 'is_not_empty' },
+                    ];
+                    
+                    const numberOps = [
+                        { label: '等于', value: '==' },
+                        { label: '不等于', value: '!=' },
+                        { label: '大于', value: '>' },
+                        { label: '大于等于', value: '>=' },
+                        { label: '小于', value: '<' },
+                        { label: '小于等于', value: '<=' },
+                        { label: '为空', value: 'is_empty' },
+                        { label: '不为空', value: 'is_not_empty' },
+                    ];
+                    
+                    const booleanOps = [
+                        { label: '等于', value: '==' },
+                    ];
+                    
+                    switch (fieldType) {
+                        case 'number':
+                            return numberOps;
+                        case 'boolean':
+                            return booleanOps;
+                        default:
+                            return stringOps;
+                    }
+                };
+
+                // 判断是否需要显示值输入框
+                const needsValueInput = (op) => {
+                    const noValueOps = ['is_empty', 'is_not_empty'];
+                    return !noValueOps.includes(op);
+                };
+
+                // 获取字段类型
+                const getFieldType = (fieldName) => {
+                    const field = availableFields.value.find(f => f.name === fieldName);
+                    return field ? field.type : 'string';
+                };
+
                 return {
                     isEventModalOpen, eventsList, selectedEvent, selectEvent,
                     strategyRules, defaultTarget, handleDefaultTargetChange, addCondition, removeCondition, addBranch, removeBranch,
                     enableRule, enableAi, rules, agents, removeRule, removeAgent,
                     ruleOutputs, aiOutputs, isDuplicate, duplicateInRule, duplicateInAi, 
-                    availableFields,
+                    availableFields, getFieldOperators, needsValueInput, getFieldType,
                     ruleDialogVisible, agentDialogVisible, isEditMode,
                     newRule, actionTabActive, apiExecutorList, protocolList, workflowList, notificationList, allActionTypes, selectedActionLabel, selectAction, actionPopoverRef,
                     workflowParams, currentActionType,
