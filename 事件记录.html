@@ -118,31 +118,92 @@
     /* 链接按钮 */
     .action-links .el-button { font-weight: 400; padding: 0 4px; }
     
-    .pagination-container {
+    /* 事件数据展示区 */
+    .event-data-section {
+      background: #f5f7fa;
+    }
+    .event-title-wrapper {
+      padding: 20px 20px 0 20px;
+    }
+    .event-data-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-top: 20px;
-      color: #606266;
-      font-size: 13px;
+      margin-bottom: 12px;
     }
-
-    /* 抽屉控制台样式 */
-    .drawer-console {
+    .event-data-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #303133;
+    }
+    .event-data-meta {
+      display: flex;
+      gap: 24px;
+      font-size: 13px;
+      color: #606266;
+    }
+    .event-data-meta .meta-label {
+      color: #909399;
+      margin-right: 8px;
+    }
+    .event-json-block {
+      background: #0a1929;
+      border-radius: 6px;
+      padding: 16px;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 14px;
+      line-height: 1.5;
+      color: #4ade80;
+      max-height: 250px;
+      overflow-y: auto;
+      margin: 0 20px 20px 20px;
+      width: calc(100% - 40px);
+      box-sizing: border-box;
+      white-space: pre;
+    }
+    .event-json-block::-webkit-scrollbar { width: 6px; }
+    .event-json-block::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
+    
+    .json-key { color: #9cdcfe; }
+    .json-string { color: #ce9178; }
+    .json-number { color: #b5cea8; }
+    .json-boolean { color: #569cd6; }
+    
+    .drawer-event-wrapper {
       display: flex;
       flex-direction: column;
       height: 100%;
-      padding: 0;
+      background: #f5f7fa;
+    }
+    .log-title-wrapper {
+      padding: 0 20px 0 20px;
+    }
+    .log-section-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #303133;
+      margin-bottom: 12px;
+      display: block;
+    }
+    .log-section {
+      background: #1e1e1e;
+      border-radius: 6px;
+      padding: 16px;
+      flex: 1;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      margin: 0 20px 20px 20px;
+      width: calc(100% - 40px);
       box-sizing: border-box;
     }
     .console-body {
       flex: 1;
       overflow-y: auto;
-      background: #1e1e1e;
-      padding: 12px 16px;
       font-family: 'Consolas', 'Courier New', monospace;
       font-size: 12px;
       line-height: 1.6;
+      padding-right: 4px;
     }
     .console-body::-webkit-scrollbar { width: 6px; }
     .console-body::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
@@ -327,9 +388,29 @@
 
     <!-- 侧边追踪详情抽屉 -->
     <el-drawer v-model="drawerVisible" :title="`执行详情 (${currentEvent.eventId})`" size="55%">
-      <div class="drawer-console">
-        <div class="console-body">
-          <div class="log-line" v-for="(log, idx) in executionLogs" :key="idx" v-html="log.html" :class="log.colorClass"></div>
+      <div class="drawer-event-wrapper">
+        <!-- 事件数据展示区 -->
+        <div class="event-data-section">
+          <div class="event-title-wrapper">
+            <div class="event-data-header">
+              <span class="event-data-title">事件数据</span>
+              <div class="event-data-meta">
+                <span><span class="meta-label">接收时间:</span>{{ currentEvent.eventTime }}</span>
+                <span><span class="meta-label">事件 ID:</span>{{ currentEvent.eventId }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="event-json-block" v-html="highlightedEventData"></div>
+        </div>
+        
+        <!-- 执行日志区域 -->
+        <div class="log-title-wrapper">
+          <span class="log-section-title">执行日志</span>
+        </div>
+        <div class="log-section">
+          <div class="console-body">
+            <div class="log-line" v-for="(log, idx) in executionLogs" :key="idx" v-html="log.html" :class="log.colorClass"></div>
+          </div>
         </div>
       </div>
     </el-drawer>
@@ -437,9 +518,24 @@
           return { rowspan: 1, colspan: 1 };
         };
 
+        const highlightedEventData = computed(() => {
+          if (!currentEvent.value.eventData) return '';
+          const jsonStr = JSON.stringify(currentEvent.value.eventData, null, 2);
+          return jsonStr.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        });
+
         const openDrawer = (row) => {
           drawerVisible.value = true;
-          currentEvent.value = row;
+          currentEvent.value = {
+            ...row,
+            eventTime: row.time,
+            eventData: row.eventData || {
+              device_id: "V-Transf-A01",
+              voltage: 245.5,
+              location: "Zone-A",
+              status: "alert"
+            }
+          };
           executionLogs.value = [
             { html: `<span style="color:#fff;">14:32:05</span> <span style="color:#4ade80;font-weight:bold;">【事件触发】</span>`, colorClass: 'text-slate-300' },
             { html: `&nbsp;&nbsp;&nbsp;&nbsp;• 接收到 <span style="color:#fde68a;font-weight:bold;border:1px solid #fde68a44;padding:1px 4px;border-radius:3px;font-size:11px;">${row.eventName}</span> 事件数据`, colorClass: 'text-slate-400' },
@@ -456,9 +552,9 @@
 
         // 视图一：明细流水 Mock 数据
         const tableData = ref([
-          { eventId: 'EVT-20240515-001', time: '2026-05-06 14:32:05', eventName: '电表电压过高告警订阅', agent: '设备诊断专家', action: '查询历史数据、诊断分析', statusType: 'warning', statusText: '安全拦截', duration: '3.4s' },
-          { eventId: 'EVT-20240515-002', time: '2026-05-06 14:30:00', eventName: '每日早班开机状态确认', agent: '能耗分析专家', action: '生成状态报告', statusType: 'success', statusText: '执行成功', duration: '45ms' },
-          { eventId: 'EVT-20240515-004', time: '2026-05-06 14:15:33', eventName: '温度异常波动检测', agent: '设备诊断专家', action: '异常诊断、发送告警', statusType: 'danger', statusText: '执行失败', duration: '12.1s' }
+          { eventId: 'EVT-20240515-001', time: '2026-05-06 14:32:05', eventName: '电表电压过高告警订阅', agent: '设备诊断专家', action: '查询历史数据、诊断分析', statusType: 'warning', statusText: '安全拦截', duration: '3.4s', eventData: { device_id: "V-Transf-A01", voltage: 245.5, location: "Zone-A", status: "alert" } },
+          { eventId: 'EVT-20240515-002', time: '2026-05-06 14:30:00', eventName: '每日早班开机状态确认', agent: '能耗分析专家', action: '生成状态报告', statusType: 'success', statusText: '执行成功', duration: '45ms', eventData: { device_id: "V-Transf-B02", voltage: 220.0, location: "Zone-B", status: "normal" } },
+          { eventId: 'EVT-20240515-004', time: '2026-05-06 14:15:33', eventName: '温度异常波动检测', agent: '设备诊断专家', action: '异常诊断、发送告警', statusType: 'danger', statusText: '执行失败', duration: '12.1s', eventData: { device_id: "T-Sensor-C03", temperature: 85.6, location: "Zone-C", status: "warning" } }
         ]);
 
         // 视图二：统计看板 Mock 数据
@@ -519,7 +615,7 @@
           searchQuery, filterStatus,
           statsSearch, filterActiveStatus,
           tableData, statsData, filteredTableData, filteredStatsData,
-          drawerVisible, currentEvent, executionLogs,
+          drawerVisible, currentEvent, executionLogs, highlightedEventData,
           openDrawer,
           reExecute,
           actionStatsVisible, currentActionStats, actionStatsFlatData, actionStatsSpanMethod,
