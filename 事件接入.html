@@ -4,568 +4,741 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>事件接入</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.4.21/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/lucide.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-plus@2.5.6/dist/index.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@element-plus/icons-vue@2.3.1"></script>
+    <script src="https://cdn.jsdelivr.net/npm/element-plus@2.5.6"></script>
+    <script src="https://cdn.jsdelivr.net/npm/element-plus@2.5.6/dist/locale/zh-cn.min.js"></script>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif; background-color: #f1f5f9; }
+        body { font-family: "Inter", system-ui, sans-serif; background-color: #f1f5f9; margin: 0; }
         [v-cloak] { display: none; }
-        ::-webkit-scrollbar { width: 5px; height: 5px; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        .drawer-mask { background-color: rgba(15, 23, 42, 0.4); backdrop-filter: blur(2px); }
-        input[type=range] { accent-color: #e2e8f0; }
-        input[type=range]:focus { outline: none; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .drawer-mask { background-color: rgba(15,23,42,0.4); backdrop-filter: blur(2px); }
+
+        /* ================= 事件列表样式（极简留白卡片风） ================= */
+        .log-view-container {
+            background: #f7f8fa;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            overflow: hidden;
+            padding: 8px 24px;
+            box-sizing: border-box;
+            gap: 6px;
+        }
+        .log-view-card {
+            background: #fff;
+            border: 1px solid #ebeef5;
+            border-radius: 10px;
+            padding: 12px 22px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.02);
+            transition: box-shadow 0.2s;
+        }
+        .log-view-card:hover {
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+        }
+        .log-view-card-main {
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+        }
+        .log-view-filter-bar {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .log-filter-label {
+            font-size: 13px;
+            color: #5a6b85;
+            font-weight: 500;
+            letter-spacing: 0.2px;
+            margin-right: 4px;
+        }
+        .log-view-table {
+            --el-table-border-color: #ebeef5;
+            --el-table-header-bg-color: #f8fafc;
+            --el-table-header-text-color: #475569;
+            --el-table-row-hover-bg-color: #f1f7ff;
+            font-size: 13px;
+        }
+        .log-view-table th.el-table__cell {
+            font-weight: 600;
+            padding: 12px 0;
+            font-size: 12px;
+            letter-spacing: 0.4px;
+            color: #475569;
+            text-transform: uppercase;
+        }
+        .log-view-table td.el-table__cell {
+            padding: 12px 0;
+        }
+        .log-view-table .el-table__row:hover td:first-child {
+            box-shadow: inset 3px 0 0 #3b82f6;
+        }
+        .log-view-action-links .el-button {
+            font-weight: 500;
+            padding: 0 4px;
+        }
+        .log-view-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-top: 16px;
+            margin-top: 14px;
+            border-top: 1px solid #f1f5f9;
+            flex-shrink: 0;
+        }
+        .log-view-footer .log-total {
+            font-size: 13px;
+            color: #94a3b8;
+            font-weight: 500;
+        }
+        .log-view-footer .log-total .log-total-num {
+            color: #0f172a;
+            font-weight: 600;
+            font-family: 'JetBrains Mono', 'Consolas', monospace;
+        }
+        .log-version {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 8px;
+            background: #eef2f7;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', 'Consolas', monospace;
+            font-size: 11.5px;
+            color: #64748b;
+            font-weight: 600;
+        }
+        .log-duration {
+            font-family: 'JetBrains Mono', 'Consolas', monospace;
+            font-size: 12.5px;
+            font-weight: 500;
+            color: #475569;
+        }
+        .log-empty {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 20px;
+            color: #94a3b8;
+            gap: 10px;
+        }
+        .log-empty .empty-icon {
+            width: 96px;
+            height: 96px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 42px;
+            color: #cbd5e1;
+            margin-bottom: 6px;
+        }
+        .log-empty .empty-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #64748b;
+        }
+        .log-empty .empty-desc {
+            font-size: 12px;
+            color: #94a3b8;
+        }
+        .task-source {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #475569;
+        }
+        .task-source-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .task-source-dot.timer { background: #64748b; }
+        .task-source-dot.webhook { background: #10b981; }
+        .task-source-dot.kafka { background: #8b5cf6; }
+        .task-source-dot.pulsar { background: #3b82f6; }
+        .task-more-dropdown {
+            border-radius: 8px !important;
+            box-shadow: 0 4px 16px rgba(15,23,42,0.08) !important;
+            border: 1px solid #ebeef5 !important;
+            padding: 4px 0 !important;
+        }
+        .task-more-dropdown .el-dropdown-menu__item {
+            font-size: 13px;
+            padding: 8px 16px;
+        }
     </style>
 </head>
-<body id="app" v-cloak class="text-slate-800 antialiased h-screen flex flex-col">
-    <header class="bg-white border-b border-slate-200 h-14 flex items-center justify-between px-6 shrink-0 shadow-sm z-20">
-        <div class="flex items-center gap-2 text-base font-bold tracking-tight text-slate-800">事件接入</div>
-        <button @click="openDrawer()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded text-sm font-medium flex items-center gap-1.5 transition-all shadow-sm">
-            <i data-lucide="plus" class="w-4 h-4"></i> 新增事件
-        </button>
-    </header>
-    <main class="flex-1 overflow-hidden flex flex-col p-6 gap-4 max-w-[1600px] mx-auto w-full">
-        <div class="flex items-center gap-3 shrink-0 bg-white p-3 rounded border border-slate-200 shadow-sm">
-            <div class="relative flex-1 max-w-sm">
-                <i data-lucide="search" class="w-4 h-4 absolute left-3 top-2.5 text-slate-400"></i>
-                <input v-model="searchKeyword" type="text" placeholder="搜索事件名称..." class="w-full pl-9 pr-8 py-1.5 bg-slate-50 border border-slate-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:bg-white transition-all">
-                <span v-if="searchKeyword" @mousedown.prevent="searchKeyword = ''" class="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 flex items-center justify-center rounded-full bg-slate-300 text-white hover:bg-slate-400 cursor-pointer z-10 transition-colors">
-                    <i data-lucide="x" class="w-3 h-3"></i>
-                </span>
-            </div>
-            <div class="relative w-40">
-                <select v-model="filterSourceType" class="w-full appearance-none bg-slate-50 border border-slate-200 rounded px-3 py-1.5 pr-8 text-sm text-slate-400 outline-none cursor-pointer focus:bg-white focus:border-blue-500 transition-colors" :class="{'text-slate-800': filterSourceType}">
-                    <option value="" disabled>触发源类型</option>
-                    <option value="Pulsar">Pulsar</option>
-                    <option value="Timer">Timer</option>
-                    <option value="Kafka">Kafka</option>
-                    <option value="WebHook">WebHook</option>
-                </select>
-                <span v-if="filterSourceType" @mousedown.prevent="clearFilter('sourceType')" class="absolute right-7 top-1/2 -translate-y-1/2 w-4 h-4 flex items-center justify-center rounded-full bg-slate-300 text-white hover:bg-slate-400 cursor-pointer z-10 transition-colors">
-                    <i data-lucide="x" class="w-3 h-3"></i>
-                </span>
-                <i data-lucide="chevron-down" class="w-4 h-4 absolute right-2.5 top-2.5 text-slate-400 pointer-events-none"></i>
-            </div>
-            <div class="relative w-36">
-                <select v-model="filterStatus" class="w-full appearance-none bg-slate-50 border border-slate-200 rounded px-3 py-1.5 pr-8 text-sm text-slate-400 outline-none cursor-pointer focus:bg-white focus:border-blue-500 transition-colors" :class="{'text-slate-800': filterStatus}">
-                    <option value="" disabled>启停状态</option>
-                    <option value="enabled">已启动</option>
-                    <option value="disabled">已停止</option>
-                </select>
-                <span v-if="filterStatus" @mousedown.prevent="clearFilter('status')" class="absolute right-7 top-1/2 -translate-y-1/2 w-4 h-4 flex items-center justify-center rounded-full bg-slate-300 text-white hover:bg-slate-400 cursor-pointer z-10 transition-colors">
-                    <i data-lucide="x" class="w-3 h-3"></i>
-                </span>
-                <i data-lucide="chevron-down" class="w-4 h-4 absolute right-2.5 top-2.5 text-slate-400 pointer-events-none"></i>
-            </div>
-            <div class="relative w-40">
-                <select v-model="filterAgent" class="w-full appearance-none bg-slate-50 border border-slate-200 rounded px-3 py-1.5 pr-8 text-sm text-slate-400 outline-none cursor-pointer focus:bg-white focus:border-blue-500 transition-colors" :class="{'text-slate-800': filterAgent}">
-                    <option value="" disabled>任务配置</option>
-                    <option value="configured">已配置</option>
-                    <option value="unconfigured">未配置</option>
-                </select>
-                <span v-if="filterAgent" @mousedown.prevent="clearFilter('agent')" class="absolute right-7 top-1/2 -translate-y-1/2 w-4 h-4 flex items-center justify-center rounded-full bg-slate-300 text-white hover:bg-slate-400 cursor-pointer z-10 transition-colors">
-                    <i data-lucide="x" class="w-3 h-3"></i>
-                </span>
-                <i data-lucide="chevron-down" class="w-4 h-4 absolute right-2.5 top-2.5 text-slate-400 pointer-events-none"></i>
-            </div>
-        </div>
-        <div class="flex-1 bg-white rounded border border-slate-200 shadow-sm overflow-hidden flex flex-col relative z-10">
-            <div class="flex-1 overflow-y-auto">
-                <table class="w-full text-left text-sm border-collapse">
-                    <thead class="bg-slate-50/80 text-slate-500 text-[12px] font-bold sticky top-0 z-10 border-b border-slate-200 shadow-sm">
-                        <tr>
-                            <th class="px-6 py-3.5 w-[18%]">事件名称</th>
-                            <th class="px-6 py-3.5 w-[10%]">触发源类型</th>
-                            <th class="px-6 py-3.5 w-[20%]">配置信息</th>
-                            <th class="px-6 py-3.5 w-[12%]">触发次数</th>
-                            <th class="px-6 py-3.5 w-[8%] text-center">启停状态</th>
-                            <th class="px-6 py-3.5 w-[20%]">已配置事件任务</th>
-                            <th class="px-6 py-3.5 w-[12%] text-left">操作</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-100">
-                        <tr v-for="rule in filteredRuleList" :key="rule.id" class="hover:bg-blue-50/30 transition-colors group">
-                            <td class="px-6 py-4 font-bold text-slate-800 text-[14px]">{{ rule.name }}</td>
-                            <td class="px-6 py-4">
-                                <span v-if="rule.type === 'Timer'" class="text-slate-600 font-medium flex items-center gap-1.5"><i data-lucide="clock" class="w-4 h-4 text-slate-400"></i> Timer</span>
-                                <span v-else-if="rule.type === 'WebHook'" class="text-green-600 font-medium flex items-center gap-1.5"><i data-lucide="link" class="w-4 h-4 text-green-400"></i> WebHook</span>
-                                <span v-else-if="rule.type === 'Kafka'" class="text-purple-600 font-medium flex items-center gap-1.5"><i data-lucide="activity" class="w-4 h-4 text-purple-400"></i> Kafka</span>
-                                <span v-else class="text-blue-600 font-medium flex items-center gap-1.5"><i data-lucide="zap" class="w-4 h-4 text-blue-400"></i> {{ rule.type }}</span>
-                            </td>
-                            <td class="px-6 py-4">
-                                <div v-if="rule.type === 'WebHook'" class="flex flex-col gap-1.5">
-                                    <div class="text-[13px] text-slate-600 font-mono flex items-start gap-1">
-                                        <span class="text-slate-400 text-[12px] mt-0.5 shrink-0">路径：</span>
-                                        <span class="truncate">{{ rule.config.path }}</span>
-                                    </div>
-                                    <div class="text-[13px] text-slate-600 font-mono flex items-start gap-1">
-                                        <span class="text-slate-400 text-[12px] mt-0.5 shrink-0">方法：</span>
-                                        <span class="truncate">{{ rule.config.method }}</span>
-                                    </div>
-                                </div>
-                                <div v-else-if="rule.type !== 'Timer'" class="flex flex-col gap-1.5">
-                                    <div class="text-[13px] text-slate-600 font-mono flex items-start gap-1">
-                                        <span class="text-slate-400 text-[12px] mt-0.5 shrink-0">IP：</span>
-                                        <span class="truncate">{{ rule.config.ip }}</span>
-                                    </div>
-                                    <div class="text-[13px] text-slate-600 font-mono flex items-start gap-1">
-                                        <span class="text-slate-400 text-[12px] mt-0.5 shrink-0">Topic：</span>
-                                        <span class="truncate">{{ rule.config.topic }}</span>
-                                    </div>
-                                </div>
-                                <div v-else class="flex items-center gap-2 text-[13px] text-slate-700 bg-slate-50 px-2 py-1.5 rounded inline-flex border border-slate-100">
-                                    <i data-lucide="calendar-clock" class="w-4 h-4 text-slate-400"></i>
-                                    {{ rule.config.cronDesc }}
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 font-mono text-[13px] text-slate-600"><span>{{ rule.triggerCount }} 次</span></td>
-                            <td class="px-6 py-4 text-center">
-                                <div @click="rule.status = !rule.status" :class="rule.status ? 'bg-green-500' : 'bg-slate-300'" class="relative inline-flex h-4 w-8 cursor-pointer items-center rounded-full transition-colors shadow-inner">
-                                    <span :class="rule.status ? 'translate-x-4' : 'translate-x-1'" class="inline-block h-2.5 w-2.5 transform rounded-full bg-white transition-transform"></span>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="flex items-center justify-start h-full gap-2 text-sm">
-                                    <template v-if="rule.agents.length">
-                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 rounded border border-blue-200 whitespace-nowrap">
-                                            <i data-lucide="bot" class="w-3.5 h-3.5"></i>
-                                            {{ rule.agents[0] }}
-                                        </span>
-                                    </template>
-                                    <span v-else class="text-slate-400">未配置</span>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 text-left">
-                                <div class="flex items-center justify-start gap-2 text-[13px] font-medium whitespace-nowrap">
-                                    <button @click="openLogDrawer(rule)" class="text-blue-600 hover:text-blue-800 transition-colors">接入日志</button>
-                                    <button @click="openAgentRunLog(rule)" class="text-blue-600 hover:text-blue-800 transition-colors">事件任务</button>
-                                    <button @click="openEditDrawer(rule)" class="text-blue-600 hover:text-blue-800 transition-colors">编辑</button>
-                                    <button @click="openDeleteModal(rule)" class="text-red-500 hover:text-red-700 transition-colors">删除</button>
-                                </div>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            <div class="px-6 py-3 border-t border-slate-200 flex items-center justify-between bg-white shrink-0">
-                <span class="text-sm text-slate-500">共 {{ filteredRuleList.length }} 个事件</span>
-                <div class="flex items-center gap-1">
-                    <button class="w-7 h-7 rounded flex items-center justify-center border border-slate-200 bg-white text-slate-500 hover:bg-slate-50"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
-                    <button class="w-7 h-7 rounded flex items-center justify-center bg-blue-600 text-white text-sm font-bold shadow-sm shadow-blue-200">1</button>
-                    <button class="w-7 h-7 rounded flex items-center justify-center border border-slate-200 bg-white text-slate-500 hover:bg-slate-50"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
-                </div>
-            </div>
-        </div>
-    </main>
-    <div v-if="isDrawerOpen" class="fixed inset-0 z-50 overflow-hidden flex justify-end">
-        <div class="drawer-mask absolute inset-0 transition-opacity" @click="isDrawerOpen = false"></div>
-        <div class="drawer-content relative w-[560px] bg-white shadow-2xl flex flex-col h-full border-l border-slate-200 transition-transform duration-300 transform" :class="isDrawerOpen ? 'translate-x-0' : 'translate-x-full'">
-            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
-                <h2 class="text-base font-bold text-slate-800">{{ isEditMode ? '编辑事件' : '新增事件' }}</h2>
-                <button @click="isDrawerOpen = false" class="w-8 h-8 flex items-center justify-center rounded-full text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-all">
-                    <i data-lucide="x" class="w-6 h-6"></i>
+<body class="h-screen overflow-hidden">
+    <div id="app" v-cloak class="h-full flex flex-col overflow-hidden">
+        <header class="bg-white border-b border-gray-200 shrink-0 z-50 shadow-sm relative h-[60px] flex items-center justify-between px-6">
+                <div class="flex items-center gap-2 text-base font-black tracking-tight text-gray-800">事件接入</div>
+                <button @click="openDrawer()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded text-sm font-bold flex items-center gap-1.5 transition-all shadow-sm">
+                    <i data-lucide="plus" class="w-4 h-4"></i> 新增事件
                 </button>
+            </header>
+        <main class="flex-1 overflow-hidden flex flex-col log-view-container max-w-[1600px] mx-auto w-full">
+            <!-- 筛选卡片 -->
+            <div class="log-view-card" style="padding: 10px 22px;">
+                <div class="log-view-filter-bar">
+                    <span class="log-filter-label">搜索</span>
+                    <el-input v-model="searchKeyword" placeholder="搜索事件名称" prefix-icon="Search" style="width: 220px;" size="small" clearable></el-input>
+                    <span class="log-filter-label" style="margin-left: 8px;">触发源类型</span>
+                    <el-select v-model="filterSourceType" placeholder="全部" style="width: 140px;" size="small" clearable>
+                        <el-option label="Pulsar" value="Pulsar"></el-option>
+                        <el-option label="Timer" value="Timer"></el-option>
+                        <el-option label="Kafka" value="Kafka"></el-option>
+                        <el-option label="WebHook" value="WebHook"></el-option>
+                    </el-select>
+                    <span class="log-filter-label" style="margin-left: 8px;">启停状态</span>
+                    <el-select v-model="filterStatus" placeholder="全部" style="width: 140px;" size="small" clearable>
+                        <el-option label="已启动" value="enabled"></el-option>
+                        <el-option label="已停止" value="disabled"></el-option>
+                    </el-select>
+                    <span class="log-filter-label" style="margin-left: 8px;">任务配置</span>
+                    <el-select v-model="filterAgent" placeholder="全部" style="width: 140px;" size="small" clearable>
+                        <el-option label="已配置" value="configured"></el-option>
+                        <el-option label="未配置" value="unconfigured"></el-option>
+                    </el-select>
+                </div>
             </div>
-            <div class="flex-1 overflow-y-auto p-8 space-y-7">
-                <div>
-                    <label class="block text-sm text-slate-700 mb-2">事件名称</label>
-                    <input type="text" v-model="form.name" placeholder="输入事件名称" class="w-full bg-slate-50 border border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:bg-white focus:border-blue-500 transition-all">
-                </div>
-                <div>
-                    <label class="block text-sm text-slate-700 mb-2">触发源类型</label>
-                    <div class="relative">
-                        <select v-model="form.sourceType" @change="handleSourceTypeChange" class="w-full appearance-none bg-slate-50 border border-slate-200 rounded-md px-3 py-2 text-sm text-slate-700 outline-none cursor-pointer focus:bg-white focus:border-blue-500">
-                            <option value="Timer">Timer</option>
-                            <option value="Pulsar">Pulsar</option>
-                            <option value="Kafka">Kafka</option>
-                            <option value="WebHook">WebHook</option>
-                        </select>
-                        <i data-lucide="chevron-down" class="w-4 h-4 absolute right-3 top-2.5 text-slate-400 pointer-events-none"></i>
-                    </div>
-                </div>
-                <div class="h-px bg-slate-100 my-4"></div>
-                <div v-if="form.sourceType === 'Timer'" class="space-y-6">
-                    <div class="flex items-center justify-between">
-                        <h3 class="text-[15px] font-bold text-slate-800">定时触发</h3>
-                        <button @click="form.useCron = !form.useCron" class="text-[13px] text-slate-600 hover:text-blue-600 flex items-center gap-1.5 transition-colors">
-                            <i data-lucide="asterisk" class="w-3.5 h-3.5"></i> {{ form.useCron ? '返回可视化配置' : '使用 Cron 表达式' }}
-                        </button>
-                    </div>
-                    <div v-if="form.useCron">
-                        <label class="block text-sm text-slate-500 mb-2">Cron 表达式</label>
-                        <input type="text" v-model="form.cronExpression" placeholder="* * * * * ?" class="w-full bg-slate-50 border border-slate-200 rounded-md px-3 py-2 text-sm font-mono outline-none focus:bg-white focus:border-blue-500">
-                    </div>
-                    <div v-else class="space-y-5">
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-[13px] text-slate-500 mb-2">频率</label>
-                                <div class="relative">
-                                    <select v-model="form.timerFreq" class="w-full appearance-none bg-slate-50/50 border border-slate-200 rounded-md px-3 py-2 text-sm outline-none cursor-pointer">
-                                        <option value="hourly">每小时</option>
-                                        <option value="daily">每日</option>
-                                        <option value="weekly">每周</option>
-                                        <option value="monthly">每月</option>
-                                    </select>
-                                    <i data-lucide="chevron-down" class="w-4 h-4 absolute right-3 top-2.5 text-slate-400 pointer-events-none"></i>
-                                </div>
+
+            <!-- 表格卡片 -->
+            <div class="log-view-card log-view-card-main">
+                <el-table
+                    v-if="pagedRuleList.length > 0"
+                    :data="pagedRuleList"
+                    class="log-view-table"
+                    style="width: 100%; flex: 1;"
+                    :max-height="undefined">
+                    <el-table-column prop="name" label="事件名称" min-width="180">
+                        <template #default="scope">
+                            <span style="font-size:13px;font-weight:600;color:#1e293b;">{{ scope.row.name }}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column label="触发源类型" width="130">
+                        <template #default="scope">
+                            <span class="task-source">
+                                <span :class="['task-source-dot', scope.row.type.toLowerCase()]"></span>
+                                {{ scope.row.type }}
+                            </span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column label="配置信息" min-width="240">
+                        <template #default="scope">
+                            <div v-if="scope.row.type === 'WebHook'" style="display:flex;flex-direction:column;gap:4px;font-size:12px;">
+                                <span style="color:#64748b;font-family:monospace;">路径：{{ scope.row.config.path }}</span>
+                                <span style="color:#64748b;font-family:monospace;">方法：{{ scope.row.config.method }}</span>
                             </div>
-                            <div>
-                                <div v-if="form.timerFreq === 'hourly'">
-                                    <label class="block text-[13px] text-slate-500 mb-2">分钟</label>
-                                    <div class="flex items-center gap-3 bg-slate-50/50 border border-slate-200 rounded-md px-3 py-1.5 h-[38px]">
-                                        <span class="text-sm w-5 text-center">{{ form.timerMinute }}</span>
-                                        <input type="range" v-model="form.timerMinute" min="0" max="59" class="flex-1 bg-slate-200 h-1.5 rounded-lg appearance-none">
+                            <div v-else-if="scope.row.type !== 'Timer'" style="display:flex;flex-direction:column;gap:4px;font-size:12px;">
+                                <span style="color:#64748b;" v-if="scope.row.config.ip">IP：{{ scope.row.config.ip }}</span>
+                                <span style="color:#64748b;" v-if="scope.row.config.bootstrapServers">Broker：{{ scope.row.config.bootstrapServers }}</span>
+                                <span style="color:#64748b;font-family:monospace;">Topic：{{ scope.row.config.topic }}</span>
+                            </div>
+                            <div v-else style="display:flex;align-items:center;gap:6px;font-size:12px;color:#475569;background:#f8fafc;padding:4px 10px;border-radius:4px;border:1px solid #e2e8f0;">
+                                <el-icon style="color:#94a3b8;"><Clock /></el-icon>
+                                {{ scope.row.config.cronDesc }}
+                            </div>
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="triggerCount" label="触发次数" width="110">
+                        <template #default="scope">
+                            <span class="log-duration">{{ scope.row.triggerCount }} 次</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column label="启停状态" width="110">
+                        <template #default="scope">
+                            <el-switch
+                                :model-value="scope.row.status"
+                                @change="(val) => scope.row.status = val"
+                                active-color="#13ce66"
+                                inactive-color="#c0ccda">
+                            </el-switch>
+                        </template>
+                    </el-table-column>
+                    <el-table-column label="事件任务配置" min-width="160">
+                        <template #default="scope">
+                            <span v-if="scope.row.agents.length" style="font-size:13px;color:#1e293b;">{{ scope.row.agents[0] }}</span>
+                            <span v-else style="font-size:12px;color:#94a3b8;">未配置</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column label="操作" min-width="280" class-name="log-view-action-links">
+                        <template #default="scope">
+                            <div style="display:flex;align-items:center;gap:2px;white-space:nowrap;">
+                                <el-button type="primary" link @click.stop="openLogDrawer(scope.row)">接入日志</el-button>
+                                <el-button type="primary" link @click.stop="openAgentRunLog(scope.row)">事件任务</el-button>
+                                <el-button type="primary" link @click.stop="openEditDrawer(scope.row)">编辑</el-button>
+                                <el-button type="danger" link @click.stop="openDeleteModal(scope.row)">删除</el-button>
+                            </div>
+                        </template>
+                    </el-table-column>
+                </el-table>
+
+                <!-- 空状态 -->
+                <div v-else class="log-empty">
+                    <div class="empty-icon">
+                        <el-icon><DocumentRemove /></el-icon>
+                    </div>
+                    <div class="empty-title">暂无匹配的事件</div>
+                    <div class="empty-desc">尝试调整搜索关键词或筛选条件</div>
+                </div>
+
+                <!-- 分页栏 -->
+                <div v-if="filteredRuleList.length > 0" class="log-view-footer">
+                    <span class="log-total">共 <span class="log-total-num">{{ filteredRuleList.length }}</span> 条记录</span>
+                    <el-pagination
+                        v-model:current-page="currentPage"
+                        v-model:page-size="pageSize"
+                        :page-sizes="[10, 20, 50]"
+                        :total="filteredRuleList.length"
+                        layout="sizes, prev, pager, next, jumper"
+                        background
+                        small>
+                    </el-pagination>
+                </div>
+            </div>
+        </main>
+
+        <!-- ========= 新增/编辑 Drawer ========= -->
+        <div v-if="isDrawerOpen" class="fixed inset-0 z-50 overflow-hidden flex justify-end">
+            <div class="drawer-mask absolute inset-0 transition-opacity" @click="isDrawerOpen = false"></div>
+            <div class="drawer-content relative w-[560px] bg-white shadow-2xl flex flex-col h-full border-l border-slate-200 transition-transform duration-300 transform" :class="isDrawerOpen ? 'translate-x-0' : 'translate-x-full'">
+                <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
+                    <h2 class="text-base font-bold text-slate-800">{{ isEditMode ? '编辑事件' : '新增事件' }}</h2>
+                    <button @click="isDrawerOpen = false" class="w-8 h-8 flex items-center justify-center rounded-full text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-all">
+                        <i data-lucide="x" class="w-6 h-6"></i>
+                    </button>
+                </div>
+                <div class="flex-1 overflow-y-auto p-8 space-y-7">
+                    <div>
+                        <label class="block text-sm text-slate-700 mb-2">事件名称</label>
+                        <input type="text" v-model="form.name" placeholder="输入事件名称" class="w-full bg-slate-50 border border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:bg-white focus:border-blue-500 transition-all">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-slate-700 mb-2">触发源类型</label>
+                        <div class="relative">
+                            <select v-model="form.sourceType" @change="handleSourceTypeChange" class="w-full appearance-none bg-slate-50 border border-slate-200 rounded-md px-3 py-2 text-sm text-slate-700 outline-none cursor-pointer focus:bg-white focus:border-blue-500">
+                                <option value="Timer">Timer</option>
+                                <option value="Pulsar">Pulsar</option>
+                                <option value="Kafka">Kafka</option>
+                                <option value="WebHook">WebHook</option>
+                            </select>
+                            <i data-lucide="chevron-down" class="w-4 h-4 absolute right-3 top-2.5 text-slate-400 pointer-events-none"></i>
+                        </div>
+                    </div>
+                    <div class="h-px bg-slate-100 my-4"></div>
+
+                    <!-- Timer 配置 -->
+                    <div v-if="form.sourceType === 'Timer'" class="space-y-6">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-[15px] font-bold text-slate-800">定时触发</h3>
+                            <button @click="form.useCron = !form.useCron" class="text-[13px] text-slate-600 hover:text-blue-600 flex items-center gap-1.5 transition-colors">
+                                <i data-lucide="asterisk" class="w-3.5 h-3.5"></i> {{ form.useCron ? '返回可视化配置' : '使用 Cron 表达式' }}
+                            </button>
+                        </div>
+                        <div v-if="form.useCron">
+                            <label class="block text-sm text-slate-500 mb-2">Cron 表达式</label>
+                            <input type="text" v-model="form.cronExpression" placeholder="* * * * * ?" class="w-full bg-slate-50 border border-slate-200 rounded-md px-3 py-2 text-sm font-mono outline-none focus:bg-white focus:border-blue-500">
+                        </div>
+                        <div v-else class="space-y-5">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-[13px] text-slate-500 mb-2">频率</label>
+                                    <div class="relative">
+                                        <select v-model="form.timerFreq" class="w-full appearance-none bg-slate-50/50 border border-slate-200 rounded-md px-3 py-2 text-sm outline-none cursor-pointer">
+                                            <option value="hourly">每小时</option>
+                                            <option value="daily">每日</option>
+                                            <option value="weekly">每周</option>
+                                            <option value="monthly">每月</option>
+                                        </select>
+                                        <i data-lucide="chevron-down" class="w-4 h-4 absolute right-3 top-2.5 text-slate-400 pointer-events-none"></i>
                                     </div>
                                 </div>
-                                <div v-else>
-                                    <label class="block text-[13px] text-slate-500 mb-2">时间</label>
-                                    <div class="relative flex items-center bg-slate-50/50 border border-slate-200 rounded-md px-3 py-2 h-[38px]">
-                                        <input type="time" v-model="form.timerTime" class="bg-transparent border-none outline-none text-sm w-full relative z-10 text-slate-700">
-                                        <div class="absolute right-3 flex items-center gap-1.5 text-[12px] text-slate-400 z-0">
-                                            UTC-5 <i data-lucide="clock" class="w-3.5 h-3.5"></i>
+                                <div>
+                                    <div v-if="form.timerFreq === 'hourly'">
+                                        <label class="block text-[13px] text-slate-500 mb-2">分钟</label>
+                                        <div class="flex items-center gap-3 bg-slate-50/50 border border-slate-200 rounded-md px-3 py-1.5 h-[38px]">
+                                            <span class="text-sm w-5 text-center">{{ form.timerMinute }}</span>
+                                            <input type="range" v-model="form.timerMinute" min="0" max="59" class="flex-1 bg-slate-200 h-1.5 rounded-lg appearance-none">
+                                        </div>
+                                    </div>
+                                    <div v-else>
+                                        <label class="block text-[13px] text-slate-500 mb-2">时间</label>
+                                        <div class="relative flex items-center bg-slate-50/50 border border-slate-200 rounded-md px-3 py-2 h-[38px]">
+                                            <input type="time" v-model="form.timerTime" class="bg-transparent border-none outline-none text-sm w-full relative z-10 text-slate-700">
+                                            <div class="absolute right-3 flex items-center gap-1.5 text-[12px] text-slate-400 z-0">
+                                                UTC-5 <i data-lucide="clock" class="w-3.5 h-3.5"></i>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                        <div v-if="form.timerFreq === 'weekly'">
-                            <label class="block text-[13px] text-slate-500 mb-2">星期</label>
-                            <div class="flex gap-2">
-                                <button v-for="day in ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']" :key="day" @click="toggleDay(day)" :class="form.timerWeekDays.includes(day) ? 'border-blue-600 text-blue-600 font-medium' : 'border-slate-200 text-slate-600 hover:border-slate-300'" class="flex-1 py-1.5 border rounded-md text-[13px] transition-colors">{{ day }}</button>
+                            <div v-if="form.timerFreq === 'weekly'">
+                                <label class="block text-[13px] text-slate-500 mb-2">星期</label>
+                                <div class="flex gap-2">
+                                    <button v-for="day in ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']" :key="day" @click="toggleDay(day)" :class="form.timerWeekDays.includes(day) ? 'border-blue-600 text-blue-600 font-medium' : 'border-slate-200 text-slate-600 hover:border-slate-300'" class="flex-1 py-1.5 border rounded-md text-[13px] transition-colors">{{ day }}</button>
+                                </div>
                             </div>
-                        </div>
-                        <div v-if="form.timerFreq === 'monthly'">
-                            <label class="block text-[13px] text-slate-500 mb-2">天</label>
-                            <div class="grid grid-cols-7 gap-2">
-                                <button v-for="d in 31" :key="d" @click="toggleMonthDay(d)" :class="form.timerMonthDays.includes(d) ? 'border-blue-600 text-blue-600 font-medium bg-blue-50/30' : 'border-slate-200 text-slate-600 hover:border-slate-300'" class="py-1.5 border rounded-md text-[13px] transition-colors">{{ d }}</button>
-                                <button @click="toggleMonthDay('last')" :class="form.timerMonthDays.includes('last') ? 'border-blue-600 text-blue-600 font-medium bg-blue-50/30' : 'border-slate-200 text-slate-600 hover:border-slate-300'" class="col-span-3 py-1.5 border rounded-md text-[13px] transition-colors flex items-center justify-center gap-1">
-                                    最后一天 <i data-lucide="help-circle" class="w-3 h-3 text-slate-400"></i>
-                                </button>
+                            <div v-if="form.timerFreq === 'monthly'">
+                                <label class="block text-[13px] text-slate-500 mb-2">天</label>
+                                <div class="grid grid-cols-7 gap-2">
+                                    <button v-for="d in 31" :key="d" @click="toggleMonthDay(d)" :class="form.timerMonthDays.includes(d) ? 'border-blue-600 text-blue-600 font-medium bg-blue-50/30' : 'border-slate-200 text-slate-600 hover:border-slate-300'" class="py-1.5 border rounded-md text-[13px] transition-colors">{{ d }}</button>
+                                    <button @click="toggleMonthDay('last')" :class="form.timerMonthDays.includes('last') ? 'border-blue-600 text-blue-600 font-medium bg-blue-50/30' : 'border-slate-200 text-slate-600 hover:border-slate-300'" class="col-span-3 py-1.5 border rounded-md text-[13px] transition-colors flex items-center justify-center gap-1">
+                                        最后一天 <i data-lucide="help-circle" class="w-3 h-3 text-slate-400"></i>
+                                    </button>
+                                </div>
                             </div>
-                        </div>
-                    </div>
-                </div>
-                <div v-if="form.sourceType === 'Pulsar'" class="space-y-6">
-                    <h3 class="text-[15px] font-bold text-slate-800">基础配置</h3>
-                    <div>
-                        <label class="block text-sm text-slate-700 mb-2"><span class="text-red-500">*</span> 服务地址</label>
-                        <input type="text" v-model="form.serviceUrl" placeholder="例: pulsar://10.0.1.2:6650" class="w-full bg-slate-50/50 border border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500">
-                    </div>
-                    <div>
-                        <label class="block text-sm text-slate-700 mb-2"><span class="text-red-500">*</span> 订阅主题 (Topic)</label>
-                        <input type="text" v-model="form.topic" placeholder="例: persistent://public/default/my-topic" class="w-full bg-slate-50/50 border border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500">
-                    </div>
-                    <div class="h-px bg-slate-100 my-4"></div>
-                    <h3 class="text-[15px] font-bold text-slate-800">安全与鉴权</h3>
-                    <div>
-                        <label class="block text-sm text-slate-700 mb-2">鉴权方式</label>
-                        <div class="relative">
-                            <select v-model="form.authMethod" class="w-full appearance-none bg-slate-50/50 border border-slate-200 rounded-md px-3 py-2 text-sm text-slate-700 outline-none cursor-pointer focus:border-blue-500">
-                                <option value="none">无鉴权</option>
-                                <option value="token">Token 鉴权</option>
-                            </select>
-                            <i data-lucide="chevron-down" class="w-4 h-4 absolute right-3 top-2.5 text-slate-400 pointer-events-none"></i>
-                        </div>
-                        <p class="text-[11px] text-slate-400 mt-1" v-if="form.authMethod === 'none'">无需填写任何认证信息，直接连接</p>
-                        <p class="text-[11px] text-slate-400 mt-1" v-else-if="form.authMethod === 'token'">使用 Token 进行身份验证</p>
-                    </div>
-                    <div v-if="form.authMethod === 'token'">
-                        <label class="block text-sm text-slate-700 mb-2"><span class="text-red-500">*</span> 访问凭证 (Token)</label>
-                        <div class="relative">
-                            <input :type="showPulsarToken ? 'text' : 'password'" v-model="form.credential" placeholder="输入 Pulsar Token" class="w-full bg-slate-50/50 border border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500 pr-10">
-                            <button type="button" @click="showPulsarToken = !showPulsarToken" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
-                                <i data-lucide="eye" v-if="!showPulsarToken" class="w-4 h-4"></i>
-                                <i data-lucide="eye-off" v-else class="w-4 h-4"></i>
-                            </button>
                         </div>
                     </div>
 
-                    <div class="h-px bg-slate-100 my-4"></div>
-                    <div>
-                        <div class="flex items-center justify-between mb-3">
-                            <h3 class="text-sm font-bold text-slate-800">事件数据字段配置</h3>
-                            <button @click="addField()" class="text-[12px] text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1"><i data-lucide="plus" class="w-3.5 h-3.5"></i> 添加字段</button>
-                        </div>
-                        <div class="border border-slate-200 rounded-md overflow-hidden">
-                            <table class="w-full text-left text-[13px]">
-                                <thead class="bg-slate-50 border-b border-slate-200 text-slate-500">
-                                    <tr>
-                                        <th class="px-3 py-2 font-medium w-[45%]">字段名 (Key)</th>
-                                        <th class="px-3 py-2 font-medium w-[40%]">数据类型</th>
-                                        <th class="px-3 py-2 font-medium w-[15%] text-center">操作</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-slate-100">
-                                    <tr v-for="(field, idx) in form.pulsarFields" :key="idx" class="bg-white">
-                                        <td class="px-3 py-1.5"><input type="text" v-model="field.name" placeholder="例如: voltage" class="w-full border border-transparent hover:border-slate-200 focus:border-blue-500 rounded px-2 py-1 outline-none text-[13px]"></td>
-                                        <td class="px-3 py-1.5">
-                                            <select v-model="field.type" class="w-full border border-transparent hover:border-slate-200 focus:border-blue-500 rounded px-1 py-1 outline-none text-[13px] bg-transparent cursor-pointer">
-                                                <option>String (文本)</option>
-                                                <option>Number (数值)</option>
-                                                <option>Boolean (布尔)</option>
-                                            </select>
-                                        </td>
-                                        <td class="px-3 py-1.5 text-center">
-                                            <button @click="removeField(idx)" class="inline-flex items-center justify-center w-7 h-7 rounded-md text-slate-500 hover:text-red-600 hover:bg-red-50 transition-all" title="删除字段">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    <tr v-if="form.pulsarFields.length === 0">
-                                        <td colspan="3" class="px-3 py-4 text-center text-slate-400 text-xs italic">暂未配置任何解析字段</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <p class="text-[11px] text-slate-400 mt-2">提示：配置字段后，下游工作流才能正确解析并引用事件内容。</p>
-                    </div>
-                </div>
-                <div v-if="form.sourceType === 'Kafka'" class="space-y-6">
-                    <h3 class="text-[15px] font-bold text-slate-800">基础配置</h3>
-                    <div>
-                        <label class="block text-sm text-slate-700 mb-2"><span class="text-red-500">*</span> 服务地址 (Bootstrap Servers)</label>
-                        <input type="text" v-model="form.kafkaBootstrapServers" placeholder="例: 192.168.1.1:9092,192.168.1.2:9092" class="w-full bg-slate-50/50 border border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500">
-                    </div>
-                    <div>
-                        <label class="block text-sm text-slate-700 mb-2"><span class="text-red-500">*</span> 订阅主题 (Topic)</label>
-                        <input type="text" v-model="form.kafkaTopic" placeholder="例: device_events" class="w-full bg-slate-50/50 border border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500">
-                    </div>
-                    <div>
-                        <label class="block text-sm text-slate-700 mb-2"><span class="text-red-500">*</span> 消费者组 ID (Group ID)</label>
-                        <input type="text" v-model="form.kafkaGroupId" placeholder="例: rule-engine-group-01" class="w-full bg-slate-50/50 border border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500">
-                        <p class="text-[11px] text-slate-400 mt-1">Kafka特有/必填项，用于标识消费者组</p>
-                    </div>
-                    <div>
-                        <label class="block text-sm text-slate-700 mb-2">消费起始位置 (Offset Reset)</label>
-                        <input type="text" value="最新的数据 (Latest)" readonly class="w-full bg-slate-50/50 border border-slate-200 rounded-md px-3 py-2 text-sm text-slate-700 cursor-not-allowed">
-                    </div>
-                    <div class="h-px bg-slate-100 my-4"></div>
-                    <h3 class="text-[15px] font-bold text-slate-800">安全与鉴权配置</h3>
-                    <div>
-                        <label class="block text-sm text-slate-700 mb-2">鉴权方式</label>
-                        <div class="relative">
-                            <select v-model="form.kafkaSecurityProtocol" class="w-full appearance-none bg-slate-50/50 border border-slate-200 rounded-md px-3 py-2 text-sm text-slate-700 outline-none cursor-pointer focus:border-blue-500">
-                                <option value="none">无鉴权</option>
-                                <option value="SASL_PLAINTEXT">SASL_PLAINTEXT</option>
-                            </select>
-                            <i data-lucide="chevron-down" class="w-4 h-4 absolute right-3 top-2.5 text-slate-400 pointer-events-none"></i>
-                        </div>
-                        <p class="text-[11px] text-slate-400 mt-1" v-if="form.kafkaSecurityProtocol === 'none'">直接连接,仅适用于内网测试环境</p>
-                        <p class="text-[11px] text-slate-400 mt-1" v-else-if="form.kafkaSecurityProtocol === 'SASL_PLAINTEXT'">明文传输用户名密码,安全性较低;通常还需指定 SASL 机制</p>
-                    </div>
-                    
-                    <div v-if="form.kafkaSecurityProtocol === 'SASL_PLAINTEXT'" class="space-y-4">
+                    <!-- Pulsar 配置 -->
+                    <div v-if="form.sourceType === 'Pulsar'" class="space-y-6">
+                        <h3 class="text-[15px] font-bold text-slate-800">基础配置</h3>
                         <div>
-                            <label class="block text-sm text-slate-700 mb-2"><span class="text-red-500">*</span> 用户名 (Username)</label>
-                            <input type="text" v-model="form.kafkaUsername" placeholder="输入Kafka用户名" class="w-full bg-slate-50/50 border border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500">
+                            <label class="block text-sm text-slate-700 mb-2"><span class="text-red-500">*</span> 服务地址</label>
+                            <input type="text" v-model="form.serviceUrl" placeholder="例: pulsar://10.0.1.2:6650" class="w-full bg-slate-50/50 border border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500">
                         </div>
                         <div>
-                            <label class="block text-sm text-slate-700 mb-2"><span class="text-red-500">*</span> 密码 (Password)</label>
+                            <label class="block text-sm text-slate-700 mb-2"><span class="text-red-500">*</span> 订阅主题 (Topic)</label>
+                            <input type="text" v-model="form.topic" placeholder="例: persistent://public/default/my-topic" class="w-full bg-slate-50/50 border border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500">
+                        </div>
+                        <div class="h-px bg-slate-100 my-4"></div>
+                        <h3 class="text-[15px] font-bold text-slate-800">安全与鉴权</h3>
+                        <div>
+                            <label class="block text-sm text-slate-700 mb-2">鉴权方式</label>
                             <div class="relative">
-                                <input :type="showKafkaPassword ? 'text' : 'password'" v-model="form.kafkaPassword" placeholder="输入Kafka密码" class="w-full bg-slate-50/50 border border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500 pr-10">
-                                <button type="button" @click="showKafkaPassword = !showKafkaPassword" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
-                                    <i data-lucide="eye" v-if="!showKafkaPassword" class="w-4 h-4"></i>
+                                <select v-model="form.authMethod" class="w-full appearance-none bg-slate-50/50 border border-slate-200 rounded-md px-3 py-2 text-sm text-slate-700 outline-none cursor-pointer focus:border-blue-500">
+                                    <option value="none">无鉴权</option>
+                                    <option value="token">Token 鉴权</option>
+                                </select>
+                                <i data-lucide="chevron-down" class="w-4 h-4 absolute right-3 top-2.5 text-slate-400 pointer-events-none"></i>
+                            </div>
+                            <p class="text-[11px] text-slate-400 mt-1" v-if="form.authMethod === 'none'">无需填写任何认证信息，直接连接</p>
+                            <p class="text-[11px] text-slate-400 mt-1" v-else-if="form.authMethod === 'token'">使用 Token 进行身份验证</p>
+                        </div>
+                        <div v-if="form.authMethod === 'token'">
+                            <label class="block text-sm text-slate-700 mb-2"><span class="text-red-500">*</span> 访问凭证 (Token)</label>
+                            <div class="relative">
+                                <input :type="showPulsarToken ? 'text' : 'password'" v-model="form.credential" placeholder="输入 Pulsar Token" class="w-full bg-slate-50/50 border border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500 pr-10">
+                                <button type="button" @click="showPulsarToken = !showPulsarToken" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                                    <i data-lucide="eye" v-if="!showPulsarToken" class="w-4 h-4"></i>
                                     <i data-lucide="eye-off" v-else class="w-4 h-4"></i>
                                 </button>
                             </div>
                         </div>
-                    </div>
-                    <div class="h-px bg-slate-100 my-4"></div>
-                    <div>
-                        <div class="flex items-center justify-between mb-3">
-                            <h3 class="text-sm font-bold text-slate-800">事件数据字段配置</h3>
-                            <button @click="addField()" class="text-[12px] text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1"><i data-lucide="plus" class="w-3.5 h-3.5"></i> 添加字段</button>
-                        </div>
-                        <div class="border border-slate-200 rounded-md overflow-hidden">
-                            <table class="w-full text-left text-[13px]">
-                                <thead class="bg-slate-50 border-b border-slate-200 text-slate-500">
-                                    <tr>
-                                        <th class="px-3 py-2 font-medium w-[45%]">字段名 (Key)</th>
-                                        <th class="px-3 py-2 font-medium w-[40%]">数据类型</th>
-                                        <th class="px-3 py-2 font-medium w-[15%] text-center">操作</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-slate-100">
-                                    <tr v-for="(field, idx) in form.pulsarFields" :key="idx" class="bg-white">
-                                        <td class="px-3 py-1.5"><input type="text" v-model="field.name" placeholder="例如: device_id" class="w-full border border-transparent hover:border-slate-200 focus:border-blue-500 rounded px-2 py-1 outline-none text-[13px]"></td>
-                                        <td class="px-3 py-1.5">
-                                            <select v-model="field.type" class="w-full border border-transparent hover:border-slate-200 focus:border-blue-500 rounded px-1 py-1 outline-none text-[13px] bg-transparent cursor-pointer">
-                                                <option>String (文本)</option>
-                                                <option>Number (数值)</option>
-                                                <option>Boolean (布尔)</option>
-                                            </select>
-                                        </td>
-                                        <td class="px-3 py-1.5 text-center">
-                                            <button @click="removeField(idx)" class="inline-flex items-center justify-center w-7 h-7 rounded-md text-slate-500 hover:text-red-600 hover:bg-red-50 transition-all" title="删除字段">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    <tr v-if="form.pulsarFields.length === 0">
-                                        <td colspan="3" class="px-3 py-4 text-center text-slate-400 text-xs italic">暂未配置任何解析字段</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <p class="text-[11px] text-slate-400 mt-2">提示：配置字段后，下游工作流才能正确解析并引用事件内容。</p>
-                    </div>
-                </div>
-                <div v-if="form.sourceType === 'WebHook'" class="space-y-6">
-                    <h3 class="text-[15px] font-bold text-slate-800">基础配置</h3>
-                    <div>
-                        <label class="block text-sm text-slate-700 mb-2"><span class="text-red-500">*</span> WebHook 路径</label>
-                        <input type="text" v-model="form.webhookPath" placeholder="例如: https://trigger.ai-plugin.io/triggers/webhook/Skmh7TNDIq2y1Pivn-FNE1Ae" class="w-full bg-slate-50/50 border border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500 placeholder:text-xs">
-                    </div>
-                    <div>
-                        <label class="block text-sm text-slate-700 mb-2">请求方法</label>
-                        <div class="relative">
-                            <select v-model="form.webhookMethod" class="w-full appearance-none bg-slate-50/50 border border-slate-200 rounded-md px-3 py-2 text-sm text-slate-700 outline-none cursor-pointer focus:border-blue-500">
-                                <option value="POST">POST</option>
-                                <option value="PUT">PUT</option>
-                                <option value="GET">GET</option>
-                            </select>
-                            <i data-lucide="chevron-down" class="w-4 h-4 absolute right-3 top-2.5 text-slate-400 pointer-events-none"></i>
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-sm text-slate-700 mb-2">内容类型</label>
-                        <div class="relative">
-                            <select v-model="form.webhookContentType" class="w-full appearance-none bg-slate-50/50 border border-slate-200 rounded-md px-3 py-2 text-sm text-slate-700 outline-none cursor-pointer focus:border-blue-500">
-                                <option value="application/json">application/json</option>
-                                <option value="application/x-www-form-urlencoded">application/x-www-form-urlencoded</option>
-                                <option value="text/plain">text/plain</option>
-                            </select>
-                            <i data-lucide="chevron-down" class="w-4 h-4 absolute right-3 top-2.5 text-slate-400 pointer-events-none"></i>
-                        </div>
-                    </div>
-                    <div class="h-px bg-slate-100 my-4"></div>
-                    <h3 class="text-[15px] font-bold text-slate-800">安全与鉴权</h3>
-                    <div>
-                        <label class="block text-sm text-slate-700 mb-2">签名验证方式</label>
-                        <div class="relative">
-                            <select v-model="form.webhookAuthType" class="w-full appearance-none bg-slate-50/50 border border-slate-200 rounded-md px-3 py-2 text-sm text-slate-700 outline-none cursor-pointer focus:border-blue-500">
-                                <option value="none">无验证</option>
-                                <option value="hmac">HMAC 签名</option>
-                            </select>
-                            <i data-lucide="chevron-down" class="w-4 h-4 absolute right-3 top-2.5 text-slate-400 pointer-events-none"></i>
-                        </div>
-                    </div>
-                    <div v-if="form.webhookAuthType === 'hmac'" class="space-y-4">
+                        <div class="h-px bg-slate-100 my-4"></div>
+                        <!-- 字段配置 -->
                         <div>
-                            <label class="block text-sm text-slate-700 mb-2">签名算法</label>
+                            <div class="flex items-center justify-between mb-3">
+                                <h3 class="text-sm font-bold text-slate-800">事件数据字段配置</h3>
+                                <button @click="addField()" class="text-[12px] text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1"><i data-lucide="plus" class="w-3.5 h-3.5"></i> 添加字段</button>
+                            </div>
+                            <div class="border border-slate-200 rounded-md overflow-hidden">
+                                <table class="w-full text-left text-[13px]">
+                                    <thead class="bg-slate-50 border-b border-slate-200 text-slate-500">
+                                        <tr>
+                                            <th class="px-3 py-2 font-medium w-[45%]">字段名 (Key)</th>
+                                            <th class="px-3 py-2 font-medium w-[40%]">数据类型</th>
+                                            <th class="px-3 py-2 font-medium w-[15%] text-center">操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100">
+                                        <tr v-for="(field, idx) in form.pulsarFields" :key="idx" class="bg-white">
+                                            <td class="px-3 py-1.5"><input type="text" v-model="field.name" placeholder="例如: voltage" class="w-full border border-transparent hover:border-slate-200 focus:border-blue-500 rounded px-2 py-1 outline-none text-[13px]"></td>
+                                            <td class="px-3 py-1.5">
+                                                <select v-model="field.type" class="w-full border border-transparent hover:border-slate-200 focus:border-blue-500 rounded px-1 py-1 outline-none text-[13px] bg-transparent cursor-pointer">
+                                                    <option>String (文本)</option>
+                                                    <option>Number (数值)</option>
+                                                    <option>Boolean (布尔)</option>
+                                                </select>
+                                            </td>
+                                            <td class="px-3 py-1.5 text-center">
+                                                <button @click="removeField(idx)" class="inline-flex items-center justify-center w-7 h-7 rounded-md text-slate-500 hover:text-red-600 hover:bg-red-50 transition-all" title="删除字段">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        <tr v-if="form.pulsarFields.length === 0">
+                                            <td colspan="3" class="px-3 py-4 text-center text-slate-400 text-xs italic">暂未配置任何解析字段</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <p class="text-[11px] text-slate-400 mt-2">提示：配置字段后，下游工作流才能正确解析并引用事件内容。</p>
+                        </div>
+                    </div>
+
+                    <!-- Kafka 配置 -->
+                    <div v-if="form.sourceType === 'Kafka'" class="space-y-6">
+                        <h3 class="text-[15px] font-bold text-slate-800">基础配置</h3>
+                        <div>
+                            <label class="block text-sm text-slate-700 mb-2"><span class="text-red-500">*</span> 服务地址 (Bootstrap Servers)</label>
+                            <input type="text" v-model="form.kafkaBootstrapServers" placeholder="例: 192.168.1.1:9092,192.168.1.2:9092" class="w-full bg-slate-50/50 border border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm text-slate-700 mb-2"><span class="text-red-500">*</span> 订阅主题 (Topic)</label>
+                            <input type="text" v-model="form.kafkaTopic" placeholder="例: device_events" class="w-full bg-slate-50/50 border border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm text-slate-700 mb-2"><span class="text-red-500">*</span> 消费者组 ID (Group ID)</label>
+                            <input type="text" v-model="form.kafkaGroupId" placeholder="例: rule-engine-group-01" class="w-full bg-slate-50/50 border border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm text-slate-700 mb-2">消费起始位置 (Offset Reset)</label>
+                            <input type="text" value="最新的数据 (Latest)" readonly class="w-full bg-slate-50/50 border border-slate-200 rounded-md px-3 py-2 text-sm text-slate-700 cursor-not-allowed">
+                        </div>
+                        <div class="h-px bg-slate-100 my-4"></div>
+                        <h3 class="text-[15px] font-bold text-slate-800">安全与鉴权配置</h3>
+                        <div>
+                            <label class="block text-sm text-slate-700 mb-2">鉴权方式</label>
                             <div class="relative">
-                                <select v-model="form.webhookHmacAlgorithm" class="w-full appearance-none bg-slate-50/50 border border-slate-200 rounded-md px-3 py-2 text-sm text-slate-700 outline-none cursor-pointer focus:border-blue-500">
-                                    <option value="sha256">SHA256</option>
-                                    <option value="sha1">SHA1</option>
-                                    <option value="md5">MD5</option>
-                                    <option value="sha512">SHA512</option>
+                                <select v-model="form.kafkaSecurityProtocol" class="w-full appearance-none bg-slate-50/50 border border-slate-200 rounded-md px-3 py-2 text-sm text-slate-700 outline-none cursor-pointer focus:border-blue-500">
+                                    <option value="none">无鉴权</option>
+                                    <option value="SASL_PLAINTEXT">SASL_PLAINTEXT</option>
+                                </select>
+                                <i data-lucide="chevron-down" class="w-4 h-4 absolute right-3 top-2.5 text-slate-400 pointer-events-none"></i>
+                            </div>
+                            <p class="text-[11px] text-slate-400 mt-1" v-if="form.kafkaSecurityProtocol === 'none'">直接连接,仅适用于内网测试环境</p>
+                            <p class="text-[11px] text-slate-400 mt-1" v-else-if="form.kafkaSecurityProtocol === 'SASL_PLAINTEXT'">明文传输用户名密码,安全性较低;通常还需指定 SASL 机制</p>
+                        </div>
+                        <div v-if="form.kafkaSecurityProtocol === 'SASL_PLAINTEXT'" class="space-y-4">
+                            <div>
+                                <label class="block text-sm text-slate-700 mb-2"><span class="text-red-500">*</span> 用户名 (Username)</label>
+                                <input type="text" v-model="form.kafkaUsername" placeholder="输入Kafka用户名" class="w-full bg-slate-50/50 border border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm text-slate-700 mb-2"><span class="text-red-500">*</span> 密码 (Password)</label>
+                                <div class="relative">
+                                    <input :type="showKafkaPassword ? 'text' : 'password'" v-model="form.kafkaPassword" placeholder="输入Kafka密码" class="w-full bg-slate-50/50 border border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500 pr-10">
+                                    <button type="button" @click="showKafkaPassword = !showKafkaPassword" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                                        <i data-lucide="eye" v-if="!showKafkaPassword" class="w-4 h-4"></i>
+                                        <i data-lucide="eye-off" v-else class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="h-px bg-slate-100 my-4"></div>
+                        <!-- 字段配置 -->
+                        <div>
+                            <div class="flex items-center justify-between mb-3">
+                                <h3 class="text-sm font-bold text-slate-800">事件数据字段配置</h3>
+                                <button @click="addField()" class="text-[12px] text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1"><i data-lucide="plus" class="w-3.5 h-3.5"></i> 添加字段</button>
+                            </div>
+                            <div class="border border-slate-200 rounded-md overflow-hidden">
+                                <table class="w-full text-left text-[13px]">
+                                    <thead class="bg-slate-50 border-b border-slate-200 text-slate-500">
+                                        <tr>
+                                            <th class="px-3 py-2 font-medium w-[45%]">字段名 (Key)</th>
+                                            <th class="px-3 py-2 font-medium w-[40%]">数据类型</th>
+                                            <th class="px-3 py-2 font-medium w-[15%] text-center">操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100">
+                                        <tr v-for="(field, idx) in form.pulsarFields" :key="idx" class="bg-white">
+                                            <td class="px-3 py-1.5"><input type="text" v-model="field.name" placeholder="例如: device_id" class="w-full border border-transparent hover:border-slate-200 focus:border-blue-500 rounded px-2 py-1 outline-none text-[13px]"></td>
+                                            <td class="px-3 py-1.5">
+                                                <select v-model="field.type" class="w-full border border-transparent hover:border-slate-200 focus:border-blue-500 rounded px-1 py-1 outline-none text-[13px] bg-transparent cursor-pointer">
+                                                    <option>String (文本)</option>
+                                                    <option>Number (数值)</option>
+                                                    <option>Boolean (布尔)</option>
+                                                </select>
+                                            </td>
+                                            <td class="px-3 py-1.5 text-center">
+                                                <button @click="removeField(idx)" class="inline-flex items-center justify-center w-7 h-7 rounded-md text-slate-500 hover:text-red-600 hover:bg-red-50 transition-all" title="删除字段">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        <tr v-if="form.pulsarFields.length === 0">
+                                            <td colspan="3" class="px-3 py-4 text-center text-slate-400 text-xs italic">暂未配置任何解析字段</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <p class="text-[11px] text-slate-400 mt-2">提示：配置字段后，下游工作流才能正确解析并引用事件内容。</p>
+                        </div>
+                    </div>
+
+                    <!-- WebHook 配置 -->
+                    <div v-if="form.sourceType === 'WebHook'" class="space-y-6">
+                        <h3 class="text-[15px] font-bold text-slate-800">基础配置</h3>
+                        <div>
+                            <label class="block text-sm text-slate-700 mb-2"><span class="text-red-500">*</span> WebHook 路径</label>
+                            <input type="text" v-model="form.webhookPath" placeholder="例如: https://trigger.ai-plugin.io/triggers/webhook/Skmh7TNDIq2y1Pivn-FNE1Ae" class="w-full bg-slate-50/50 border border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500 placeholder:text-xs">
+                        </div>
+                        <div>
+                            <label class="block text-sm text-slate-700 mb-2">请求方法</label>
+                            <div class="relative">
+                                <select v-model="form.webhookMethod" class="w-full appearance-none bg-slate-50/50 border border-slate-200 rounded-md px-3 py-2 text-sm text-slate-700 outline-none cursor-pointer focus:border-blue-500">
+                                    <option value="POST">POST</option>
+                                    <option value="PUT">PUT</option>
+                                    <option value="GET">GET</option>
                                 </select>
                                 <i data-lucide="chevron-down" class="w-4 h-4 absolute right-3 top-2.5 text-slate-400 pointer-events-none"></i>
                             </div>
                         </div>
                         <div>
-                            <label class="block text-sm text-slate-700 mb-2">密钥 (Secret Key)</label>
+                            <label class="block text-sm text-slate-700 mb-2">内容类型</label>
                             <div class="relative">
-                                <input :type="showHmacSecret ? 'text' : 'password'" v-model="form.webhookSecret" placeholder="输入HMAC密钥" class="w-full bg-slate-50/50 border border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500 pr-10">
-                                <button type="button" @click="showHmacSecret = !showHmacSecret" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
-                                    <i data-lucide="eye" v-if="!showHmacSecret" class="w-4 h-4"></i>
-                                    <i data-lucide="eye-off" v-else class="w-4 h-4"></i>
-                                </button>
+                                <select v-model="form.webhookContentType" class="w-full appearance-none bg-slate-50/50 border border-slate-200 rounded-md px-3 py-2 text-sm text-slate-700 outline-none cursor-pointer focus:border-blue-500">
+                                    <option value="application/json">application/json</option>
+                                    <option value="application/x-www-form-urlencoded">application/x-www-form-urlencoded</option>
+                                    <option value="text/plain">text/plain</option>
+                                </select>
+                                <i data-lucide="chevron-down" class="w-4 h-4 absolute right-3 top-2.5 text-slate-400 pointer-events-none"></i>
                             </div>
-                            <p class="text-[11px] text-slate-400 mt-1">请求将使用此密钥对请求体进行签名验证</p>
+                        </div>
+                        <div class="h-px bg-slate-100 my-4"></div>
+                        <h3 class="text-[15px] font-bold text-slate-800">安全与鉴权</h3>
+                        <div>
+                            <label class="block text-sm text-slate-700 mb-2">签名验证方式</label>
+                            <div class="relative">
+                                <select v-model="form.webhookAuthType" class="w-full appearance-none bg-slate-50/50 border border-slate-200 rounded-md px-3 py-2 text-sm text-slate-700 outline-none cursor-pointer focus:border-blue-500">
+                                    <option value="none">无验证</option>
+                                    <option value="hmac">HMAC 签名</option>
+                                </select>
+                                <i data-lucide="chevron-down" class="w-4 h-4 absolute right-3 top-2.5 text-slate-400 pointer-events-none"></i>
+                            </div>
+                        </div>
+                        <div v-if="form.webhookAuthType === 'hmac'" class="space-y-4">
+                            <div>
+                                <label class="block text-sm text-slate-700 mb-2">签名算法</label>
+                                <div class="relative">
+                                    <select v-model="form.webhookHmacAlgorithm" class="w-full appearance-none bg-slate-50/50 border border-slate-200 rounded-md px-3 py-2 text-sm text-slate-700 outline-none cursor-pointer focus:border-blue-500">
+                                        <option value="sha256">SHA256</option>
+                                        <option value="sha1">SHA1</option>
+                                        <option value="md5">MD5</option>
+                                        <option value="sha512">SHA512</option>
+                                    </select>
+                                    <i data-lucide="chevron-down" class="w-4 h-4 absolute right-3 top-2.5 text-slate-400 pointer-events-none"></i>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm text-slate-700 mb-2">密钥 (Secret Key)</label>
+                                <div class="relative">
+                                    <input :type="showHmacSecret ? 'text' : 'password'" v-model="form.webhookSecret" placeholder="输入HMAC密钥" class="w-full bg-slate-50/50 border border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500 pr-10">
+                                    <button type="button" @click="showHmacSecret = !showHmacSecret" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                                        <i data-lucide="eye" v-if="!showHmacSecret" class="w-4 h-4"></i>
+                                        <i data-lucide="eye-off" v-else class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                                <p class="text-[11px] text-slate-400 mt-1">请求将使用此密钥对请求体进行签名验证</p>
+                            </div>
+                        </div>
+                        <div class="h-px bg-slate-100 my-4"></div>
+                        <!-- 字段配置 -->
+                        <div>
+                            <div class="flex items-center justify-between mb-3">
+                                <h3 class="text-sm font-bold text-slate-800">事件数据字段配置</h3>
+                                <button @click="addField()" class="text-[12px] text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1"><i data-lucide="plus" class="w-3.5 h-3.5"></i> 添加字段</button>
+                            </div>
+                            <div class="border border-slate-200 rounded-md overflow-hidden">
+                                <table class="w-full text-left text-[13px]">
+                                    <thead class="bg-slate-50 border-b border-slate-200 text-slate-500">
+                                        <tr>
+                                            <th class="px-3 py-2 font-medium w-[45%]">字段名 (Key)</th>
+                                            <th class="px-3 py-2 font-medium w-[40%]">数据类型</th>
+                                            <th class="px-3 py-2 font-medium w-[15%] text-center">操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100">
+                                        <tr v-for="(field, idx) in form.pulsarFields" :key="idx" class="bg-white">
+                                            <td class="px-3 py-1.5"><input type="text" v-model="field.name" placeholder="例如: event_id" class="w-full border border-transparent hover:border-slate-200 focus:border-blue-500 rounded px-2 py-1 outline-none text-[13px]"></td>
+                                            <td class="px-3 py-1.5">
+                                                <select v-model="field.type" class="w-full border border-transparent hover:border-slate-200 focus:border-blue-500 rounded px-1 py-1 outline-none text-[13px] bg-transparent cursor-pointer">
+                                                    <option>String (文本)</option>
+                                                    <option>Number (数值)</option>
+                                                    <option>Boolean (布尔)</option>
+                                                </select>
+                                            </td>
+                                            <td class="px-3 py-1.5 text-center">
+                                                <button @click="removeField(idx)" class="inline-flex items-center justify-center w-7 h-7 rounded-md text-slate-500 hover:text-red-600 hover:bg-red-50 transition-all" title="删除字段">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        <tr v-if="form.pulsarFields.length === 0">
+                                            <td colspan="3" class="px-3 py-4 text-center text-slate-400 text-xs italic">暂未配置任何解析字段</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <p class="text-[11px] text-slate-400 mt-2">提示：配置字段后，下游工作流才能正确解析并引用事件内容。</p>
                         </div>
                     </div>
-                    <div class="h-px bg-slate-100 my-4"></div>
-                    <div>
-                        <div class="flex items-center justify-between mb-3">
-                            <h3 class="text-sm font-bold text-slate-800">事件数据字段配置</h3>
-                            <button @click="addField()" class="text-[12px] text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1"><i data-lucide="plus" class="w-3.5 h-3.5"></i> 添加字段</button>
+                </div>
+                <div class="px-6 py-4 border-t border-slate-100 flex justify-end gap-3 bg-slate-50/50 shrink-0">
+                    <button @click="isDrawerOpen = false" class="px-5 py-2 text-sm text-slate-600 font-medium border border-slate-200 rounded hover:bg-white transition-colors">取消</button>
+                    <button @click="saveConfig()" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium transition-colors">{{ isEditMode ? '保存修改' : '保存配置' }}</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========= 接入日志 Drawer ========= -->
+        <div v-if="isLogDrawerOpen" class="fixed inset-0 z-50 overflow-hidden flex justify-end">
+            <div class="drawer-mask absolute inset-0 transition-opacity" @click="isLogDrawerOpen = false"></div>
+            <div class="drawer-content relative w-[600px] bg-white shadow-2xl flex flex-col h-full border-l border-slate-200 transition-transform duration-300 transform" :class="isLogDrawerOpen ? 'translate-x-0' : 'translate-x-full'">
+                <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
+                    <h2 class="text-base font-bold text-slate-800">事件接入日志 - {{ selectedEventLog.name }}</h2>
+                    <button @click="isLogDrawerOpen = false" class="w-8 h-8 flex items-center justify-center rounded-full text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-all">
+                        <i data-lucide="x" class="w-6 h-6"></i>
+                    </button>
+                </div>
+                <div class="flex-1 overflow-y-auto p-5 space-y-5">
+                    <div v-for="(log, index) in currentEventLogs" :key="index" class="border border-slate-200 rounded-md overflow-hidden">
+                        <div class="bg-slate-50 px-4 py-3 border-b border-slate-200 flex justify-between items-center">
+                            <span class="text-sm font-medium text-slate-700">接收时间：{{ log.timestamp }}</span>
+                            <span class="text-xs text-slate-500">事件 ID: {{ log.id }}</span>
                         </div>
-                        <div class="border border-slate-200 rounded-md overflow-hidden">
-                            <table class="w-full text-left text-[13px]">
-                                <thead class="bg-slate-50 border-b border-slate-200 text-slate-500">
-                                    <tr>
-                                        <th class="px-3 py-2 font-medium w-[45%]">字段名 (Key)</th>
-                                        <th class="px-3 py-2 font-medium w-[40%]">数据类型</th>
-                                        <th class="px-3 py-2 font-medium w-[15%] text-center">操作</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-slate-100">
-                                    <tr v-for="(field, idx) in form.pulsarFields" :key="idx" class="bg-white">
-                                        <td class="px-3 py-1.5"><input type="text" v-model="field.name" placeholder="例如: event_id" class="w-full border border-transparent hover:border-slate-200 focus:border-blue-500 rounded px-2 py-1 outline-none text-[13px]"></td>
-                                        <td class="px-3 py-1.5">
-                                            <select v-model="field.type" class="w-full border border-transparent hover:border-slate-200 focus:border-blue-500 rounded px-1 py-1 outline-none text-[13px] bg-transparent cursor-pointer">
-                                                <option>String (文本)</option>
-                                                <option>Number (数值)</option>
-                                                <option>Boolean (布尔)</option>
-                                            </select>
-                                        </td>
-                                        <td class="px-3 py-1.5 text-center">
-                                            <button @click="removeField(idx)" class="inline-flex items-center justify-center w-7 h-7 rounded-md text-slate-500 hover:text-red-600 hover:bg-red-50 transition-all" title="删除字段">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    <tr v-if="form.pulsarFields.length === 0">
-                                        <td colspan="3" class="px-3 py-4 text-center text-slate-400 text-xs italic">暂未配置任何解析字段</td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                        <div class="p-4 bg-slate-50/50">
+                            <div class="text-xs text-slate-500 mb-2">事件数据 (JSON):</div>
+                            <pre class="bg-slate-900 text-green-400 p-4 rounded text-xs font-mono overflow-x-auto">{{ JSON.stringify(log.data, null, 2) }}</pre>
                         </div>
-                        <p class="text-[11px] text-slate-400 mt-2">提示：配置字段后，下游工作流才能正确解析并引用事件内容。</p>
+                    </div>
+                    <div v-if="currentEventLogs.length === 0" class="text-center py-12 text-slate-400">
+                        <i data-lucide="file-text" class="w-12 h-12 mx-auto mb-3 text-slate-300"></i>
+                        <p>暂无事件接入日志</p>
                     </div>
                 </div>
             </div>
-            <div class="px-6 py-4 border-t border-slate-100 flex justify-end gap-3 bg-slate-50/50 shrink-0">
-                <button @click="isDrawerOpen = false" class="px-5 py-2 text-sm text-slate-600 font-medium border border-slate-200 rounded hover:bg-white transition-colors">取消</button>
-                <button @click="saveConfig()" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium transition-colors">{{ isEditMode ? '保存修改' : '保存配置' }}</button>
+        </div>
+
+        <!-- ========= 删除确认弹窗 ========= -->
+        <div v-if="isDeleteModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-black bg-opacity-40 backdrop-blur-sm"></div>
+            <div class="relative bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+                <div class="text-center mb-4">
+                    <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-100 text-red-600 mb-4">
+                        <i data-lucide="trash-2" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-800">确认删除</h3>
+                    <p class="text-slate-500 mt-2">您确定要删除事件 "{{ selectedEventToDelete }}" 吗？此操作不可撤销。</p>
+                </div>
+                <div class="flex gap-3 justify-center">
+                    <button @click="isDeleteModalOpen = false" class="px-6 py-2 text-sm text-slate-600 font-medium border border-slate-200 rounded hover:bg-white transition-colors">取消</button>
+                    <button @click="confirmDelete()" class="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded text-sm font-medium transition-colors">确认删除</button>
+                </div>
             </div>
         </div>
     </div>
-    <div v-if="isLogDrawerOpen" class="fixed inset-0 z-50 overflow-hidden flex justify-end">
-        <div class="drawer-mask absolute inset-0 transition-opacity" @click="isLogDrawerOpen = false"></div>
-        <div class="drawer-content relative w-[600px] bg-white shadow-2xl flex flex-col h-full border-l border-slate-200 transition-transform duration-300 transform" :class="isLogDrawerOpen ? 'translate-x-0' : 'translate-x-full'">
-            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
-                <h2 class="text-base font-bold text-slate-800">事件接入日志 - {{ selectedEventLog.name }}</h2>
-                <button @click="isLogDrawerOpen = false" class="text-slate-400 hover:text-slate-600 p-1 rounded-full hover:bg-slate-100"><i data-lucide="x" class="w-5 h-5"></i></button>
-            </div>
-            <div class="flex-1 overflow-y-auto p-5 space-y-5">
-                <div v-for="(log, index) in currentEventLogs" :key="index" class="border border-slate-200 rounded-md overflow-hidden">
-                    <div class="bg-slate-50 px-4 py-3 border-b border-slate-200 flex justify-between items-center">
-                        <span class="text-sm font-medium text-slate-700">接收时间：{{ log.timestamp }}</span>
-                        <span class="text-xs text-slate-500">事件 ID: {{ log.id }}</span>
-                    </div>
-                    <div class="p-4 bg-slate-50/50">
-                        <div class="text-xs text-slate-500 mb-2">事件数据 (JSON):</div>
-                        <pre class="bg-slate-900 text-green-400 p-4 rounded text-xs font-mono overflow-x-auto">{{ JSON.stringify(log.data, null, 2) }}</pre>
-                    </div>
-                </div>
-                <div v-if="currentEventLogs.length === 0" class="text-center py-12 text-slate-400">
-                    <i data-lucide="file-text" class="w-12 h-12 mx-auto mb-3 text-slate-300"></i>
-                    <p>暂无事件接入日志</p>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div v-if="isDeleteModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-black bg-opacity-40 backdrop-blur-sm"></div>
-        <div class="relative bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
-            <div class="text-center mb-4">
-                <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-100 text-red-600 mb-4">
-                    <i data-lucide="trash-2" class="w-6 h-6"></i>
-                </div>
-                <h3 class="text-lg font-bold text-slate-800">确认删除</h3>
-                <p class="text-slate-500 mt-2">您确定要删除事件 "{{ selectedEventToDelete }}" 吗？此操作不可撤销。</p>
-            </div>
-            <div class="flex gap-3 justify-center">
-                <button @click="isDeleteModalOpen = false" class="px-6 py-2 text-sm text-slate-600 font-medium border border-slate-200 rounded hover:bg-white transition-colors">取消</button>
-                <button @click="confirmDelete()" class="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded text-sm font-medium transition-colors">确认删除</button>
-            </div>
-        </div>
-    </div>
+
     <script>
         const { createApp, ref, computed, onMounted, watch, nextTick } = Vue;
-        createApp({
+
+        const app = createApp({
             setup() {
                 const isDrawerOpen = ref(false);
                 const isEditMode = ref(false);
@@ -579,12 +752,8 @@
                 const filterStatus = ref('');
                 const filterAgent = ref('');
                 const showHmacSecret = ref(false);
-                const showToken = ref(false);
-                const showBasicPassword = ref(false);
-                const showKafkaPassword = ref(false);
-                const showKafkaKeystorePassword = ref(false);
                 const showPulsarToken = ref(false);
-                const showPulsarPassword = ref(false);
+                const showKafkaPassword = ref(false);
                 const editingRuleId = ref(null);
                 const form = ref({
                     name: '',
@@ -609,42 +778,32 @@
                     kafkaSecurityProtocol: 'none',
                     kafkaUsername: '',
                     kafkaPassword: '',
-                    kafkaScramMechanism: 'SCRAM-SHA-256',
-                    kafkaSslMode: 'single',
-                    kafkaKeystorePassword: '',
-                    kafkaTruststoreFile: null,
-                    kafkaKeystoreFile: null,
                     webhookPath: '',
                     webhookMethod: 'POST',
                     webhookContentType: 'application/json',
                     webhookAuthType: 'none',
                     webhookSecret: '',
-                    webhookHmacAlgorithm: 'sha256',
-                    webhookBasicUser: '',
-                    webhookBasicPassword: ''
+                    webhookHmacAlgorithm: 'sha256'
                 });
                 const ruleList = ref([
                     { id: 1, name: '电表电压过高告警订阅', type: 'Pulsar', status: true, triggerCount: 1256, showMore: false, config: { ip: '10.0.1.2:6650', topic: 'persistent://electricity/alert/' }, rules: ['电压预警', '电流异常'], agents: [] },
-                    { id: 2, name: '每周五能耗巡检报表', type: 'Timer', status: true, triggerCount: 86, showMore: false, config: { cronDesc: '每周五 22:00:00' }, rules: [], agents: ['能耗分析专家'] },
-                    { id: 3, name: '每日早班开机状态确认', type: 'Timer', status: true, triggerCount: 342, showMore: false, config: { cronDesc: '每日 08:30:00' }, rules: ['设备状态检查'], agents: ['设备诊断专家'] },
+                    { id: 2, name: '每周五能耗巡检报表', type: 'Timer', status: true, triggerCount: 86, showMore: false, config: { cronDesc: '每周五 22:00:00' }, rules: [], agents: ['能耗巡检任务'] },
+                    { id: 3, name: '每日早班开机状态确认', type: 'Timer', status: true, triggerCount: 342, showMore: false, config: { cronDesc: '每日 08:30:00' }, rules: ['设备状态检查'], agents: ['设备开机状态检查任务'] },
                     { id: 4, name: 'SMT贴片机停机信号订阅', type: 'Pulsar', status: false, triggerCount: 12, showMore: false, config: { ip: 'pulsar.factory.local:6650', topic: 'industrial/smt/stop_code' }, rules: [], agents: [] },
-                    { id: 5, name: 'GitHub 代码提交通知', type: 'WebHook', status: true, triggerCount: 56, showMore: false, config: { path: '/webhook/github/commit', method: 'POST', authType: 'hmac', contentType: 'application/json' }, rules: ['代码审核'], agents: ['开发协作助手'] },
-                    { id: 6, name: '订单状态更新 WebHook', type: 'WebHook', status: true, triggerCount: 234, showMore: false, config: { path: '/webhook/orders/update', method: 'POST', authType: 'token', contentType: 'application/json' }, rules: ['订单处理'], agents: ['订单助手'] },
-                    { id: 7, name: '设备传感器数据流', type: 'Kafka', status: true, triggerCount: 1523, showMore: false, config: { bootstrapServers: 'kafka-broker-1:9092,kafka-broker-2:9092', topic: 'iot.sensor.data' }, rules: ['数据清洗', '异常检测'], agents: ['物联网数据助手'] }
+                    { id: 5, name: 'GitHub 代码提交通知', type: 'WebHook', status: true, triggerCount: 56, showMore: false, config: { path: '/webhook/github/commit', method: 'POST', authType: 'hmac', contentType: 'application/json' }, rules: ['代码审核'], agents: ['代码提交处理任务'] },
+                    { id: 6, name: '订单状态更新 WebHook', type: 'WebHook', status: true, triggerCount: 234, showMore: false, config: { path: '/webhook/orders/update', method: 'POST', authType: 'token', contentType: 'application/json' }, rules: ['订单处理'], agents: ['订单状态处理任务'] },
+                    { id: 7, name: '设备传感器数据流', type: 'Kafka', status: true, triggerCount: 1523, showMore: false, config: { bootstrapServers: 'kafka-broker-1:9092,kafka-broker-2:9092', topic: 'iot.sensor.data' }, rules: ['数据清洗', '异常检测'], agents: ['传感器数据处理任务'] }
                 ]);
                 const eventLogsData = {
-                    1: [{ id: 'EVT-20231026-001', timestamp: '2023-10-26 14:32:05', data: { device_id: 'V-Transf-A01', voltage: 245.5, location: 'Zone-A', status: 'alert' } }, { id: 'EVT-20231026-002', timestamp: '2023-10-26 14:28:12', data: { device_id: 'V-Transf-A01', voltage: 242.3, location: 'Zone-A', status: 'normal' } }, { id: 'EVT-20231026-003', timestamp: '2023-10-26 14:25:45', data: { device_id: 'V-Transf-A01', voltage: 240.1, location: 'Zone-A', status: 'normal' } }],
+                    1: [{ id: 'EVT-20231026-001', timestamp: '2023-10-26 14:32:05', data: { device_id: 'V-Transf-A01', voltage: 245.5, location: 'Zone-A', status: 'alert' } }, { id: 'EVT-20231026-002', timestamp: '2023-10-26 14:28:12', data: { device_id: 'V-Transf-A01', voltage: 242.3, location: 'Zone-A', status: 'normal' } }],
                     2: [{ id: 'EVT-20231027-001', timestamp: '2023-10-27 22:00:00', data: { report_id: 'REPORT-20231027', period: '2023-10-20 to 2023-10-27', total_energy: 12500 } }],
                     3: [{ id: 'EVT-20231026-001', timestamp: '2023-10-26 08:30:00', data: { check_id: 'CHECK-20231026', operator: 'Admin_Sys', devices: ['Machine-A01', 'Machine-A02'] } }],
-                    5: [{ id: 'EVT-20231028-001', timestamp: '2023-10-28 16:45:23', data: { commit_id: 'abc123456789', author: 'developer', message: 'feat: 添加新功能', repository: 'https://github.com/example/repo' } }, { id: 'EVT-20231027-002', timestamp: '2023-10-27 10:20:15', data: { commit_id: 'def987654321', author: 'admin', message: 'fix: 修复bug', repository: 'https://github.com/example/repo' } }, { id: 'EVT-20231026-003', timestamp: '2023-10-26 09:15:30', data: { commit_id: 'ghi456789123', author: 'tester', message: 'test: 添加测试用例', repository: 'https://github.com/example/repo' } }],
-                    6: [{ id: 'EVT-20231028-001', timestamp: '2023-10-28 14:30:00', data: { order_id: 'ORD-2023-1028-001', status: 'paid', amount: 1299.99, customer: '张三' } }, { id: 'EVT-20231028-002', timestamp: '2023-10-28 12:15:00', data: { order_id: 'ORD-2023-1028-002', status: 'shipped', amount: 899.00, customer: '李四' } }],
-                    7: [
-                        { id: 'EVT-20231029-001', timestamp: '2023-10-29 09:15:32', data: { sensor_id: 'TEMP-001', device_name: '温度传感器A1', temperature: 36.8, humidity: 65.2, pressure: 1013.25, timestamp: '2023-10-29T09:15:30Z', location: '车间-3号生产线' } },
-                        { id: 'EVT-20231029-002', timestamp: '2023-10-29 09:15:30', data: { sensor_id: 'VIB-002', device_name: '振动传感器B2', vibration_x: 0.15, vibration_y: 0.08, vibration_z: 0.22, frequency: 50.5, amplitude: 0.35, status: 'normal', timestamp: '2023-10-29T09:15:28Z', location: '车间-2号生产线' } },
-                        { id: 'EVT-20231029-003', timestamp: '2023-10-29 09:15:28', data: { sensor_id: 'PRESS-003', device_name: '压力传感器C3', pressure: 2.5, flow_rate: 150.5, valve_position: 75, alarm_threshold: 3.0, status: 'normal', timestamp: '2023-10-29T09:15:25Z', location: '车间-1号生产线' } }
-                    ]
+                    5: [{ id: 'EVT-20231028-001', timestamp: '2023-10-28 16:45:23', data: { commit_id: 'abc123456789', author: 'developer', message: 'feat: 添加新功能', repository: 'https://github.com/example/repo' } }],
+                    6: [{ id: 'EVT-20231028-001', timestamp: '2023-10-28 14:30:00', data: { order_id: 'ORD-2023-1028-001', status: 'paid', amount: 1299.99, customer: '张三' } }],
+                    7: [{ id: 'EVT-20231029-001', timestamp: '2023-10-29 09:15:32', data: { sensor_id: 'TEMP-001', device_name: '温度传感器A1', temperature: 36.8, humidity: 65.2 } }]
                 };
                 const currentEventLogs = ref([]);
+
                 const filteredRuleList = computed(() => {
                     return ruleList.value.filter(rule => {
                         if (searchKeyword.value && !rule.name.includes(searchKeyword.value)) return false;
@@ -656,13 +815,21 @@
                         return true;
                     });
                 });
+
+                const currentPage = ref(1);
+                const pageSize = ref(10);
+
+                const pagedRuleList = computed(() => {
+                    const start = (currentPage.value - 1) * pageSize.value;
+                    return filteredRuleList.value.slice(start, start + pageSize.value);
+                });
+
+                watch([searchKeyword, filterSourceType, filterStatus, filterAgent], () => { currentPage.value = 1; });
+
                 const clearFilter = (type) => {
                     if (type === 'sourceType') filterSourceType.value = '';
                     if (type === 'status') filterStatus.value = '';
                     if (type === 'agent') filterAgent.value = '';
-                };
-                const getStrategyTooltip = (rule) => {
-                    return rule.agents.join(', ');
                 };
                 const openDrawer = () => {
                     resetForm();
@@ -724,24 +891,16 @@
                         kafkaSecurityProtocol: 'none',
                         kafkaUsername: '',
                         kafkaPassword: '',
-                        kafkaScramMechanism: 'SCRAM-SHA-256',
-                        kafkaSslMode: 'single',
-                        kafkaKeystorePassword: '',
-                        kafkaTruststoreFile: null,
-                        kafkaKeystoreFile: null,
                         webhookPath: '',
                         webhookMethod: 'POST',
                         webhookContentType: 'application/json',
                         webhookAuthType: 'none',
                         webhookSecret: '',
-                        webhookHmacAlgorithm: 'sha256',
-                        webhookBasicUser: '',
-                        webhookBasicPassword: ''
+                        webhookHmacAlgorithm: 'sha256'
                     };
-                    showKafkaPassword.value = false;
-                    showKafkaKeystorePassword.value = false;
+                    showHmacSecret.value = false;
                     showPulsarToken.value = false;
-                    showPulsarPassword.value = false;
+                    showKafkaPassword.value = false;
                 };
                 const toggleDay = (day) => {
                     const index = form.value.timerWeekDays.indexOf(day);
@@ -817,79 +976,39 @@
                     isDrawerOpen.value = false;
                     alert(isEditMode.value ? '修改成功' : '创建成功');
                 };
-                const openExecutionDetail = (rule) => {
-                    alert('事件执行明细功能开发中...');
-                };
                 const openAgentRunLog = (rule) => {
-                    alert('事件处理统计功能开发中...');
+                    window.location.href = `事件任务详情.html?id=${rule.id}`;
                 };
                 const handleSourceTypeChange = () => {
                     form.value.pulsarFields = [];
                 };
-                const handleKafkaTruststoreUpload = (event) => {
-                    const file = event.target.files[0];
-                    if (file) {
-                        form.value.kafkaTruststoreFile = file;
-                    }
-                };
-                const handleKafkaKeystoreUpload = (event) => {
-                    const file = event.target.files[0];
-                    if (file) {
-                        form.value.kafkaKeystoreFile = file;
-                    }
-                };
+
                 onMounted(() => {
-                    lucide.createIcons();
+                    nextTick(() => { if (window.lucide) lucide.createIcons(); });
                 });
-                watch(isDrawerOpen, (newVal) => {
-                    if (newVal) {
-                        nextTick(() => {
-                            lucide.createIcons();
-                        });
-                    }
+                watch(isDrawerOpen, (val) => {
+                    if (val) nextTick(() => { if (window.lucide) lucide.createIcons(); });
                 });
+                watch(isLogDrawerOpen, (val) => {
+                    if (val) nextTick(() => { if (window.lucide) lucide.createIcons(); });
+                });
+
                 return {
-                    isDrawerOpen,
-                    isEditMode,
-                    isLogDrawerOpen,
-                    isDeleteModalOpen,
-                    selectedEventLog,
-                    selectedEventToDelete,
-                    searchKeyword,
-                    filterSourceType,
-                    filterStatus,
-                    filterAgent,
-                    showHmacSecret,
-                    showToken,
-                    showBasicPassword,
-                    showKafkaPassword,
-                    showKafkaKeystorePassword,
-                    showPulsarToken,
-                    showPulsarPassword,
-                    form,
-                    ruleList,
-                    currentEventLogs,
-                    filteredRuleList,
-                    clearFilter,
-                    getStrategyTooltip,
-                    openDrawer,
-                    openEditDrawer,
-                    openLogDrawer,
-                    openDeleteModal,
-                    confirmDelete,
-                    toggleDay,
-                    toggleMonthDay,
-                    addField,
-                    removeField,
-                    saveConfig,
-                    openExecutionDetail,
-                    openAgentRunLog,
-                    handleSourceTypeChange,
-                    handleKafkaTruststoreUpload,
-                    handleKafkaKeystoreUpload
+                    isDrawerOpen, isEditMode, isLogDrawerOpen, isDeleteModalOpen,
+                    selectedEventLog, selectedEventToDelete,
+                    searchKeyword, filterSourceType, filterStatus, filterAgent,
+                    showHmacSecret, showPulsarToken, showKafkaPassword,
+                    form, ruleList, currentEventLogs, filteredRuleList, currentPage, pageSize, pagedRuleList,
+                    openDrawer, openEditDrawer, openLogDrawer, openDeleteModal, confirmDelete,
+                    resetForm, toggleDay, toggleMonthDay, addField, removeField,
+                    saveConfig, openAgentRunLog, handleSourceTypeChange
                 };
             }
-        }).mount('#app');
+        });
+
+        for (const [key, component] of Object.entries(ElementPlusIconsVue)) { app.component(key, component); }
+        app.use(ElementPlus, { locale: ElementPlusLocaleZhCn });
+        app.mount('#app');
     </script>
 </body>
 </html>
