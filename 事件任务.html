@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-plus@2.5.6/dist/index.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@element-plus/icons-vue@2.3.1"></script>
     <script src="https://cdn.jsdelivr.net/npm/element-plus@2.5.6"></script>
+    <script src="https://cdn.jsdelivr.net/npm/element-plus@2.5.6/dist/locale/zh-cn.min.js"></script>
     <style>
         body { font-family: "Inter", system-ui, sans-serif; background-color: #f1f5f9; margin: 0; }
         [v-cloak] { display: none; }
@@ -25,15 +26,15 @@
             flex-direction: column;
             height: 100%;
             overflow: hidden;
-            padding: 24px 28px 24px;
+            padding: 8px 24px;
             box-sizing: border-box;
-            gap: 16px;
+            gap: 6px;
         }
         .log-view-card {
             background: #fff;
             border: 1px solid #ebeef5;
             border-radius: 10px;
-            padding: 20px 22px;
+            padding: 12px 22px;
             display: flex;
             flex-direction: column;
             box-shadow: 0 1px 2px rgba(15, 23, 42, 0.02);
@@ -193,8 +194,8 @@
     </style>
 </head>
 <body class="h-screen overflow-hidden">
-    <div id="app" v-cloak>
-        <header class="bg-white border-b border-gray-200 h-14 flex items-center justify-between px-6 shrink-0 shadow-sm z-50">
+    <div id="app" v-cloak class="h-full flex flex-col overflow-hidden">
+        <header class="bg-white border-b border-gray-200 h-[60px] flex items-center justify-between px-6 shrink-0 shadow-sm z-50">
                 <div class="flex items-center gap-2 text-base font-black tracking-tight text-gray-800">事件任务</div>
                 <button @click="openCreateDialog" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded text-sm font-bold flex items-center gap-1.5 transition-all shadow-sm">
                     <i data-lucide="plus" class="w-4 h-4"></i> 新建任务
@@ -202,12 +203,12 @@
             </header>
             <main class="flex-1 overflow-hidden flex flex-col log-view-container max-w-[1600px] mx-auto w-full">
                 <!-- 筛选卡片 -->
-                <div class="log-view-card">
+                <div class="log-view-card" style="padding: 10px 22px;">
                     <div class="log-view-filter-bar">
                         <span class="log-filter-label">搜索</span>
-                        <el-input v-model="searchKeyword" placeholder="搜索任务名称" prefix-icon="Search" style="width: 220px;" clearable></el-input>
+                        <el-input v-model="searchKeyword" placeholder="搜索任务名称" prefix-icon="Search" style="width: 220px;" size="small" clearable></el-input>
                         <span class="log-filter-label" style="margin-left: 8px;">启停状态</span>
-                        <el-select v-model="filterStatus" placeholder="全部" style="width: 140px;" clearable>
+                        <el-select v-model="filterStatus" placeholder="全部" style="width: 140px;" size="small" clearable>
                             <el-option label="运行中" value="running"></el-option>
                             <el-option label="已停用" value="stopped"></el-option>
                             <el-option label="草稿" value="draft"></el-option>
@@ -616,7 +617,7 @@
             template: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" style="width:1em;height:1em;"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-14a1 1 0 10-2 0v5.586l2.293 2.293a1 1 0 001.414-1.414L11 9.586V4z" clip-rule="evenodd"/></svg>'
         });
 
-        app.use(ElementPlus);
+        app.use(ElementPlus, { locale: ElementPlusLocaleZhCn });
         app.mount('#app');
     </script>
 </body>
