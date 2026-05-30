@@ -926,20 +926,29 @@
                     </div>
                     <div class="p-5 bg-slate-50/50">
                         <div v-if="selectedEvent.name" class="bg-white border border-blue-200 rounded-xl p-4 shadow-sm flex items-start gap-4">
-                            <div class="p-2.5 rounded-lg shrink-0" :class="selectedEvent.source === 'Pulsar' ? 'bg-blue-50 text-blue-600' : 'bg-orange-50 text-orange-600'">
+                            <div class="p-2.5 rounded-lg shrink-0" :class="{
+                                'bg-blue-50 text-blue-600': selectedEvent.source === 'Pulsar',
+                                'bg-purple-50 text-purple-600': selectedEvent.source === 'Kafka',
+                                'bg-orange-50 text-orange-600': selectedEvent.source === 'Timer'
+                            }">
                                 <el-icon class="text-xl">
                                     <Lightning v-if="selectedEvent.source === 'Pulsar'" />
+                                    <Histogram v-else-if="selectedEvent.source === 'Kafka'" />
                                     <Timer v-else />
                                 </el-icon>
                             </div>
                             <div class="flex-1">
                                 <div class="flex items-center gap-3 mb-1.5">
                                     <h3 class="text-sm font-bold text-slate-800">{{ selectedEvent.name }}</h3>
-                                    <el-tag size="small" effect="light" :type="selectedEvent.source === 'Pulsar' ? 'primary' : 'warning'">
+                                    <el-tag v-if="selectedEvent.source === 'Kafka'" size="small" effect="light" class="!bg-purple-50 !text-purple-700 !border-purple-200">Kafka</el-tag>
+                                    <el-tag v-else size="small" effect="light" :type="selectedEvent.source === 'Pulsar' ? 'primary' : 'warning'">
                                         {{ selectedEvent.source === 'Pulsar' ? 'Pulsar' : 'Timer' }}
                                     </el-tag>
                                 </div>
                                 <p class="text-xs text-slate-500" v-if="selectedEvent.source === 'Pulsar'">
+                                    <span class="font-bold text-slate-600">IP: </span><span class="font-mono">{{ selectedEvent.ip }}</span><span class="font-bold text-slate-600 ml-2 mr-1">;</span><span class="font-bold text-slate-600">Topic: </span><span class="font-mono">{{ selectedEvent.topic }}</span>
+                                </p>
+                                <p class="text-xs text-slate-500" v-else-if="selectedEvent.source === 'Kafka'">
                                     <span class="font-bold text-slate-600">IP: </span><span class="font-mono">{{ selectedEvent.ip }}</span><span class="font-bold text-slate-600 ml-2 mr-1">;</span><span class="font-bold text-slate-600">Topic: </span><span class="font-mono">{{ selectedEvent.topic }}</span>
                                 </p>
                                 <p class="text-xs text-slate-500 mb-1" v-else>
@@ -1564,6 +1573,10 @@
                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 mr-1"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
                                         Pulsar
                                     </span>
+                                    <span v-else-if="event.type === 'Kafka'" class="flex items-center text-purple-600">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 mr-1"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                                        Kafka
+                                    </span>
                                     <span v-else class="flex items-center text-slate-600">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 mr-1"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                                         Timer
@@ -1571,7 +1584,11 @@
                                 </td>
                                 <td class="px-4 py-3 text-slate-600">
                                     <div v-if="event.type === 'Pulsar'">
-                                        <div>IP: 10.0.1.2:6650</div>
+                                        <div>IP: {{ event.ip }}</div>
+                                        <div>Topic: {{ event.topic }}</div>
+                                    </div>
+                                    <div v-else-if="event.type === 'Kafka'">
+                                        <div>IP: {{ event.ip }}</div>
                                         <div>Topic: {{ event.topic }}</div>
                                     </div>
                                     <div v-else class="inline-block bg-slate-50 px-3 py-1 rounded text-slate-700">
@@ -2322,9 +2339,13 @@
                 const selectedEvent = ref({ name: '', source: '', topic: '', cron: '', ip: '', eventId: '' });
 
                 const eventsList = ref([
-                    { id: 1, name: '电压过高告警预案触发', type: 'Pulsar', topic: 'persistent://electricity/alert/', status: true },
+                    { id: 1, name: '电压过高告警预案触发', type: 'Pulsar', ip: '10.0.1.2:6650', topic: 'persistent://electricity/alert/', status: true },
                     { id: 2, name: '每周五能耗巡检定时启动', type: 'Timer', cron: '0 0 22 ? * FRI', status: true },
-                    { id: 3, name: '每日早班开机状态确认', type: 'Timer', cron: '0 30 8 ? * *', status: true }
+                    { id: 3, name: '每日早班开机状态确认', type: 'Timer', cron: '0 30 8 ? * *', status: true },
+                    { id: 4, name: '巡检结果 Kafka 订阅', type: 'Kafka', ip: '172.19.4.2:19192', topic: 'inspection_results', status: true },
+                    { id: 5, name: '摄像头状态 Kafka 订阅', type: 'Kafka', ip: '172.19.4.2:19192', topic: 'camera_status_result', status: true },
+                    { id: 6, name: '设备传感器数据流', type: 'Kafka', ip: '172.19.4.2:19192', topic: 'iot.sensor.data', status: true },
+                    { id: 7, name: '产线告警 Kafka 订阅（停用）', type: 'Kafka', ip: '172.19.4.2:19192', topic: 'production.alerts', status: false }
                 ]);
 
                 const historyList = ref([
@@ -2450,7 +2471,14 @@
                     }
                 ]);
                 const selectEvent = (event) => {
-                    selectedEvent.value = { name: event.name, source: event.type, topic: event.topic, cron: event.cron, ip: event.ip || '10.0.1.2:6650', eventId: '' };
+                    selectedEvent.value = {
+                        name: event.name,
+                        source: event.type,
+                        topic: event.topic || '',
+                        cron: event.cron || '',
+                        ip: event.ip || (event.type === 'Pulsar' ? '10.0.1.2:6650' : ''),
+                        eventId: ''
+                    };
                     isEventModalOpen.value = false;
                 };
 
