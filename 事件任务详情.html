@@ -949,7 +949,7 @@
                                     <span class="font-bold text-slate-600">IP: </span><span class="font-mono">{{ selectedEvent.ip }}</span><span class="font-bold text-slate-600 ml-2 mr-1">;</span><span class="font-bold text-slate-600">Topic: </span><span class="font-mono">{{ selectedEvent.topic }}</span>
                                 </p>
                                 <p class="text-xs text-slate-500" v-else-if="selectedEvent.source === 'Kafka'">
-                                    <span class="font-bold text-slate-600">IP: </span><span class="font-mono">{{ selectedEvent.ip }}</span><span class="font-bold text-slate-600 ml-2 mr-1">;</span><span class="font-bold text-slate-600">Topic: </span><span class="font-mono">{{ selectedEvent.topic }}</span>
+                                    <span class="font-bold text-slate-600">IP: </span><span class="font-mono">{{ selectedEvent.ip }}</span><span class="font-bold text-slate-600 ml-2 mr-1">;</span><span class="font-bold text-slate-600">Topic: </span><span class="font-mono">{{ selectedEvent.topic }}</span><span class="font-bold text-slate-600 ml-2 mr-1">;</span><span class="font-bold text-slate-600">Group ID: </span><span class="font-mono">{{ selectedEvent.groupId }}</span>
                                 </p>
                                 <p class="text-xs text-slate-500 mb-1" v-else>
                                     <span class="font-bold text-slate-600">Cron: </span><span class="font-mono">{{ selectedEvent.cron }}</span>
@@ -1590,6 +1590,7 @@
                                     <div v-else-if="event.type === 'Kafka'">
                                         <div>IP: {{ event.ip }}</div>
                                         <div>Topic: {{ event.topic }}</div>
+                                        <div>Group ID: {{ event.groupId }}</div>
                                     </div>
                                     <div v-else class="inline-block bg-slate-50 px-3 py-1 rounded text-slate-700">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 mr-1 inline"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/><path d="m9 16 2 2 4-4"/></svg>
@@ -2336,16 +2337,16 @@
             setup() {
                 const isEventModalOpen = ref(false);
                 const isHistoryModalOpen = ref(false);
-                const selectedEvent = ref({ name: '', source: '', topic: '', cron: '', ip: '', eventId: '' });
+                const selectedEvent = ref({ name: '', source: '', topic: '', cron: '', ip: '', groupId: '', eventId: '' });
 
                 const eventsList = ref([
                     { id: 1, name: '电压过高告警预案触发', type: 'Pulsar', ip: '10.0.1.2:6650', topic: 'persistent://electricity/alert/', status: true },
                     { id: 2, name: '每周五能耗巡检定时启动', type: 'Timer', cron: '0 0 22 ? * FRI', status: true },
                     { id: 3, name: '每日早班开机状态确认', type: 'Timer', cron: '0 30 8 ? * *', status: true },
-                    { id: 4, name: '巡检结果 Kafka 订阅', type: 'Kafka', ip: '172.19.4.2:19192', topic: 'inspection_results', status: true },
-                    { id: 5, name: '摄像头状态 Kafka 订阅', type: 'Kafka', ip: '172.19.4.2:19192', topic: 'camera_status_result', status: true },
-                    { id: 6, name: '设备传感器数据流', type: 'Kafka', ip: '172.19.4.2:19192', topic: 'iot.sensor.data', status: true },
-                    { id: 7, name: '产线告警 Kafka 订阅（停用）', type: 'Kafka', ip: '172.19.4.2:19192', topic: 'production.alerts', status: false }
+                    { id: 4, name: '巡检结果 Kafka 订阅', type: 'Kafka', ip: '172.19.4.2:19192', topic: 'inspection_results', groupId: 'event-task-inspection-v1', status: true },
+                    { id: 5, name: '摄像头状态 Kafka 订阅', type: 'Kafka', ip: '172.19.4.2:19192', topic: 'camera_status_result', groupId: 'event-task-camera-v1', status: true },
+                    { id: 6, name: '设备传感器数据流', type: 'Kafka', ip: '172.19.4.2:19192', topic: 'iot.sensor.data', groupId: 'rule-engine-group-01', status: true },
+                    { id: 7, name: '产线告警 Kafka 订阅（停用）', type: 'Kafka', ip: '172.19.4.2:19192', topic: 'production.alerts', groupId: 'event-task-alerts-v1', status: false }
                 ]);
 
                 const historyList = ref([
@@ -2477,6 +2478,7 @@
                         topic: event.topic || '',
                         cron: event.cron || '',
                         ip: event.ip || (event.type === 'Pulsar' ? '10.0.1.2:6650' : ''),
+                        groupId: event.groupId || '',
                         eventId: ''
                     };
                     isEventModalOpen.value = false;
