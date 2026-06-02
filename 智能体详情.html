@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能体详情</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.4.21/dist/vue.global.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/lucide.min.js"></script>
+    <style>
+        :root {
+            --primary: #4080ff;
+            --primary-light: #ecf3ff;
+            --border: #e4e7ed;
+            --text-primary: #303133;
+            --text-secondary: #606266;
+            --text-muted: #909399;
+            --page-bg: #f5f7fa;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: "PingFang SC", "Microsoft YaHei", "Inter", system-ui, sans-serif;
+            background: var(--page-bg);
+            color: var(--text-primary);
+        }
+        [v-cloak] { display: none; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background: #c0c4cc; border-radius: 3px; }
+
+        .platform-sidebar {
+            width: 220px;
+            min-width: 220px;
+            background: #fff;
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        .sidebar-nav { flex: 1; overflow-y: auto; padding: 12px 8px 16px; }
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            border-radius: 6px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.15s;
+            text-decoration: none;
+        }
+        .nav-item:hover { background: #f5f7fa; color: var(--text-primary); }
+        .nav-item.active {
+            background: var(--primary-light);
+            color: var(--primary);
+            font-weight: 600;
+        }
+        .nav-item .nav-icon { width: 16px; height: 16px; flex-shrink: 0; opacity: 0.75; }
+        .nav-item.active .nav-icon { opacity: 1; }
+        .sidebar-user {
+            padding: 12px 16px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        .sidebar-user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4080ff, #69b1ff);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .main-area {
+            flex: 1;
+            min-width: 0;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .main-scroll {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 32px 40px;
+        }
+        .detail-wrap {
+            width: 100%;
+            max-width: 1360px;
+            margin: 0 auto;
+        }
+
+        .breadcrumb {
+            font-size: 13px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .breadcrumb a { color: var(--primary); text-decoration: none; }
+        .breadcrumb a:hover { text-decoration: underline; }
+        .breadcrumb .sep { color: #c0c4cc; }
+        .breadcrumb .current { color: var(--text-secondary); }
+
+        .module-card {
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px 28px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+        }
+
+        /* ===== 基本信息 ===== */
+        .basic-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            margin-bottom: 16px;
+        }
+        .basic-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 10px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+        .basic-icon.blue { background: #ecf3ff; }
+        .basic-icon.green { background: #e8f8f0; }
+        .basic-icon.purple { background: #f3ecff; }
+        .basic-icon.orange { background: #fff3e8; }
+        .basic-icon.teal { background: #e6fffb; }
+        .basic-title-block { flex: 1; min-width: 0; }
+        .basic-title-row {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            max-width: 100%;
+            margin-bottom: 8px;
+        }
+        .basic-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: #1a1a1a;
+            line-height: 1.35;
+            margin: 0;
+        }
+        .experience-btn {
+            flex-shrink: 0;
+            padding: 8px 22px;
+            border: none;
+            border-radius: 6px;
+            background: var(--primary);
+            color: #fff;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.15s, box-shadow 0.15s;
+            white-space: nowrap;
+        }
+        .experience-btn:hover {
+            background: #3370e6;
+            box-shadow: 0 4px 12px rgba(64, 128, 255, 0.25);
+        }
+        .card-tags-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            flex-shrink: 0;
+        }
+        .basic-meta {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+        .meta-tag {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 400;
+        }
+        .meta-tag.industry-green { background: #f6faf8; color: #6b9a82; border: 1px solid #e8f0ec; }
+        .meta-tag.industry-teal { background: #f6fbfb; color: #6b9a9a; border: 1px solid #e8f0f0; }
+        .meta-tag.industry-blue { background: #f6f8fc; color: #7a94c4; border: 1px solid #e8edf4; }
+        .meta-tag.industry-orange { background: #fcfaf6; color: #b8956a; border: 1px solid #f0ebe4; }
+        .meta-tag.industry-purple { background: #f9f7fc; color: #9585b0; border: 1px solid #ebe8f0; }
+        .meta-tag.type-single { background: #f9f7fc; color: #9585b0; border: 1px solid #ebe8f0; }
+        .meta-tag.type-multi { background: #f6f9fc; color: #7a94c4; border: 1px solid #e8edf4; }
+        .meta-tag.type-workflow { background: #fcfaf6; color: #b8956a; border: 1px solid #f0ebe4; }
+        .meta-tag.type-chatflow { background: #f6faf8; color: #6b9a82; border: 1px solid #e8f0ec; }
+        .meta-tag.scope-global { background: #f6f8fc; color: #7a94c4; border: 1px solid #e8edf4; }
+        .meta-tag.scope-org { background: #fcfaf6; color: #b8956a; border: 1px solid #f0ebe4; }
+        .meta-tag.scope-private { background: #f7f8fa; color: #909399; border: 1px solid #ebeef2; }
+
+        .quote-desc {
+            background: #f8fafc;
+            border-left: 4px solid var(--primary);
+            border-radius: 0 8px 8px 0;
+            padding: 14px 18px;
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.75;
+            margin: 0;
+        }
+        .quote-desc::before { content: '"'; color: #c0c4cc; margin-right: 2px; }
+        .quote-desc::after { content: '"'; color: #c0c4cc; margin-left: 2px; }
+
+        /* ===== 区块标题 ===== */
+        .section-heading {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 16px;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin: 0 0 20px;
+        }
+        .section-heading .bar {
+            width: 4px;
+            height: 16px;
+            background: var(--primary);
+            border-radius: 2px;
+            flex-shrink: 0;
+        }
+        .sub-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #303133;
+            margin: 0 0 10px;
+        }
+        .sub-label .sub-icon { width: 16px; height: 16px; }
+        .sub-label .sub-icon.sparkle { color: #faad14; }
+        .sub-label .sub-icon.func { color: #722ed1; }
+
+        .core-value-box {
+            background: #f8fbff;
+            border: 1px solid #e8f0ff;
+            border-radius: 8px;
+            padding: 14px 16px;
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.75;
+            margin-bottom: 24px;
+        }
+
+        .func-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 14px;
+        }
+        @media (max-width: 900px) {
+            .func-grid { grid-template-columns: 1fr; }
+        }
+        .func-card {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            background: #fff;
+            transition: box-shadow 0.2s, border-color 0.2s;
+        }
+        .func-card:hover {
+            border-color: #c6d8ff;
+            box-shadow: 0 4px 12px rgba(64, 128, 255, 0.08);
+        }
+        .func-card-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+        .func-card-icon.blue { background: #ecf3ff; color: #4080ff; }
+        .func-card-icon.green { background: #e8f8f0; color: #13a065; }
+        .func-card-icon.purple { background: #f3ecff; color: #722ed1; }
+        .func-card-icon svg { width: 18px; height: 18px; }
+        .func-card-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #303133;
+            margin: 0 0 8px;
+        }
+        .func-card-desc {
+            font-size: 12px;
+            color: var(--text-muted);
+            line-height: 1.65;
+            margin: 0;
+        }
+
+        /* ===== 应用场景 ===== */
+        .audience-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 24px;
+            font-size: 13px;
+        }
+        .audience-row .audience-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        .audience-row .audience-label svg { width: 16px; height: 16px; color: var(--text-muted); }
+        .audience-tag {
+            font-size: 12px;
+            padding: 4px 12px;
+            border-radius: 14px;
+            background: #f0f2f5;
+            color: var(--text-secondary);
+            border: 1px solid #e4e7ed;
+        }
+        .scenario-list { display: flex; flex-direction: column; gap: 28px; }
+        .scenario-item {
+            display: flex;
+            gap: 24px;
+            align-items: flex-start;
+        }
+        @media (max-width: 768px) {
+            .scenario-item { flex-direction: column; }
+        }
+        .scenario-media {
+            width: 280px;
+            min-width: 280px;
+            height: 168px;
+            border-radius: 8px;
+            background: #f0f2f5;
+            border: 1px dashed #dcdfe6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: #c0c4cc;
+            text-align: center;
+            padding: 12px;
+            flex-shrink: 0;
+        }
+        @media (max-width: 768px) {
+            .scenario-media { width: 100%; min-width: 0; }
+        }
+        .scenario-body { flex: 1; min-width: 0; }
+        .scenario-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin: 0 0 10px;
+            line-height: 1.45;
+        }
+        .scenario-desc {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.75;
+            margin: 0;
+        }
+
+        .not-found {
+            text-align: center;
+            padding: 80px 20px;
+            color: var(--text-muted);
+        }
+        .not-found a { color: var(--primary); }
+    </style>
+</head>
+<body>
+    <div id="app" v-cloak class="flex h-screen overflow-hidden">
+        <aside class="platform-sidebar">
+            <nav class="sidebar-nav">
+                <a class="nav-item active" href="广场.html"><i data-lucide="layout-grid" class="nav-icon"></i> 智能体广场</a>
+                <a class="nav-item" href="广场.html?view=component"><i data-lucide="puzzle" class="nav-icon"></i> 组件广场</a>
+            </nav>
+            <div class="sidebar-user">
+                <div class="sidebar-user-avatar">A</div>
+                <span>admin</span>
+            </div>
+        </aside>
+
+        <div class="main-area">
+            <div class="main-scroll" v-if="detail">
+                <div class="detail-wrap">
+                    <nav class="breadcrumb">
+                        <a href="广场.html">智能体广场</a>
+                        <span class="sep">/</span>
+                        <span class="current">{{ detail.title }}</span>
+                    </nav>
+
+                    <!-- 模块一：基本信息 -->
+                    <section class="module-card">
+                        <div class="basic-header">
+                            <div class="basic-icon" :class="detail.iconColor">
+                                <span>{{ detail.emoji }}</span>
+                            </div>
+                            <div class="basic-title-block">
+                                <div class="basic-title-row">
+                                    <h1 class="basic-title">{{ detail.title }}</h1>
+                                    <div class="card-tags-row">
+                                        <span class="meta-tag" :class="detail.industryClass">{{ detail.industry }}</span>
+                                        <span class="meta-tag" :class="getAgentTypeClass(detail.agentType)">{{ detail.agentType }}</span>
+                                        <span class="meta-tag" :class="getScopeClass(detail.scope)">{{ detail.scope }}</span>
+                                    </div>
+                                </div>
+                                <div class="basic-meta">
+                                    <span>来源：{{ detail.source }}</span>
+                                    <span>上架时间：{{ detail.updatedAt }}</span>
+                                </div>
+                            </div>
+                            <button type="button" class="experience-btn" @click="onExperience">体验</button>
+                        </div>
+                        <div class="quote-desc">{{ detail.description }}</div>
+                    </section>
+
+                    <!-- 模块二：核心价值与功能 -->
+                    <section class="module-card">
+                        <h2 class="section-heading"><span class="bar"></span>核心价值与功能</h2>
+                        <div class="sub-label">
+                            <i data-lucide="sparkles" class="sub-icon sparkle"></i>
+                            核心价值
+                        </div>
+                        <div class="core-value-box">{{ detail.coreValue }}</div>
+                        <div class="sub-label">
+                            <i data-lucide="boxes" class="sub-icon func"></i>
+                            核心功能
+                        </div>
+                        <div class="func-grid">
+                            <div
+                                v-for="(fn, idx) in detail.coreFunctions"
+                                :key="idx"
+                                class="func-card">
+                                <div class="func-card-icon" :class="fn.iconBg">
+                                    <i :data-lucide="fn.icon"></i>
+                                </div>
+                                <h3 class="func-card-title">{{ fn.title }}</h3>
+                                <p class="func-card-desc">{{ fn.desc }}</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- 模块三：典型应用场景 -->
+                    <section class="module-card">
+                        <h2 class="section-heading"><span class="bar"></span>典型应用场景</h2>
+                        <div class="audience-row">
+                            <span class="audience-label">
+                                <i data-lucide="users"></i>
+                                适用人群：
+                            </span>
+                            <span
+                                v-for="(tag, idx) in detail.audiences"
+                                :key="idx"
+                                class="audience-tag">{{ tag }}</span>
+                        </div>
+                        <div class="scenario-list">
+                            <div
+                                v-for="(scene, idx) in detail.scenarios"
+                                :key="idx"
+                                class="scenario-item">
+                                <div class="scenario-media">[ 场景配图 / 界面截图 ]</div>
+                                <div class="scenario-body">
+                                    <h3 class="scenario-title">{{ scene.title }}</h3>
+                                    <p class="scenario-desc">{{ scene.desc }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            <div class="main-scroll" v-else>
+                <div class="not-found">
+                    <p>未找到该智能体</p>
+                    <p style="margin-top:12px;"><a href="广场.html">返回智能体广场</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="agents-data.js"></script>
+    <script>
+        const { createApp, ref, onMounted, nextTick, watch } = Vue;
+
+        const app = createApp({
+            setup() {
+                const idParam = new URLSearchParams(location.search).get('id');
+                const detail = ref(
+                    typeof resolveAgentDetail === 'function'
+                        ? resolveAgentDetail(idParam)
+                        : null
+                );
+
+                function refreshIcons() {
+                    nextTick(() => {
+                        if (window.lucide) lucide.createIcons();
+                    });
+                }
+
+                function onExperience() {
+                    if (!detail.value) return;
+                    console.log('体验智能体:', detail.value.title);
+                }
+
+                onMounted(() => {
+                    document.title = detail.value
+                        ? `${detail.value.title} - 智能体详情`
+                        : '智能体详情';
+                    refreshIcons();
+                });
+
+                watch(detail, () => refreshIcons());
+
+                return {
+                    detail,
+                    onExperience,
+                    getAgentTypeClass: (type) => window.getAgentTypeClass(type),
+                    getScopeClass: (scope) => window.getScopeClass(scope)
+                };
+            }
+        });
+
+        app.mount('#app');
+    </script>
+</body>
+</html>

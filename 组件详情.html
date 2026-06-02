@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>组件详情</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.4.21/dist/vue.global.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/lucide.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-plus@2.5.6/dist/index.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@element-plus/icons-vue@2.3.1"></script>
+    <script src="https://cdn.jsdelivr.net/npm/element-plus@2.5.6"></script>
+    <script src="https://cdn.jsdelivr.net/npm/element-plus@2.5.6/dist/locale/zh-cn.min.js"></script>
+    <style>
+        :root {
+            --primary: #4080ff;
+            --primary-light: #ecf3ff;
+            --border: #e4e7ed;
+            --text-primary: #303133;
+            --text-secondary: #606266;
+            --text-muted: #909399;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: "PingFang SC", "Microsoft YaHei", "Inter", system-ui, sans-serif;
+            background: #f5f7fa;
+            color: var(--text-primary);
+        }
+        [v-cloak] { display: none; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background: #c0c4cc; border-radius: 3px; }
+
+        .platform-sidebar {
+            width: 220px;
+            min-width: 220px;
+            background: #fff;
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        .sidebar-nav { flex: 1; overflow-y: auto; padding: 12px 8px 16px; }
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            border-radius: 6px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.15s;
+            text-decoration: none;
+        }
+        .nav-item:hover { background: #f5f7fa; color: var(--text-primary); }
+        .nav-item.active {
+            background: var(--primary-light);
+            color: var(--primary);
+            font-weight: 600;
+        }
+        .nav-item .nav-icon { width: 16px; height: 16px; flex-shrink: 0; opacity: 0.75; }
+        .nav-item.active .nav-icon { opacity: 1; }
+        .sidebar-user {
+            padding: 12px 16px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        .sidebar-user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4080ff, #69b1ff);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .main-area {
+            flex: 1;
+            min-width: 0;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            background: #fff;
+        }
+        .main-scroll {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px 28px 40px;
+        }
+
+        .breadcrumb {
+            font-size: 13px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .breadcrumb a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+        .breadcrumb a:hover { text-decoration: underline; }
+        .breadcrumb .sep { color: #c0c4cc; }
+        .breadcrumb .current { color: var(--text-secondary); }
+
+        .detail-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 24px;
+        }
+        .detail-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #4080ff 0%, #69b1ff 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 28px;
+            box-shadow: 0 4px 12px rgba(64, 128, 255, 0.25);
+        }
+        .detail-title-block { flex: 1; min-width: 0; }
+        .detail-title-row {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+        .detail-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1a1a1a;
+            line-height: 1.35;
+        }
+        .header-card-tags {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .card-tag {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 400;
+            line-height: 1.4;
+        }
+        .card-tag.price-free {
+            background: #f6faf8;
+            color: #6b9a82;
+            border: 1px solid #e8f0ec;
+        }
+        .card-tag.price-paid {
+            background: #fcf6f6;
+            color: #c97a7a;
+            border: 1px solid #f0e4e4;
+        }
+        .card-tag.category {
+            background: #f7f8fa;
+            color: #909399;
+            border: 1px solid #ebeef2;
+        }
+        .detail-meta {
+            font-size: 13px;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .detail-meta .meta-item { display: inline-flex; align-items: center; gap: 4px; }
+
+        .section-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin: 0 0 12px;
+        }
+        .section-block { margin-bottom: 28px; }
+        .section-desc {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+
+        .tools-section .section-title { margin-bottom: 14px; }
+        .tools-panel {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: #fff;
+            overflow: hidden;
+        }
+        .api-tabs-bar {
+            display: flex;
+            align-items: stretch;
+            background: #fafbfc;
+            border-bottom: 1px solid var(--border);
+        }
+        .api-tabs-scroll {
+            flex: 1;
+            overflow-x: auto;
+            overflow-y: hidden;
+            display: flex;
+            align-items: stretch;
+            min-width: 0;
+            scroll-behavior: smooth;
+            scrollbar-width: none;
+        }
+        .api-tabs-scroll::-webkit-scrollbar {
+            display: none;
+            width: 0;
+            height: 0;
+        }
+        .api-tab {
+            padding: 12px 16px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            white-space: nowrap;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -1px;
+            transition: color 0.15s, border-color 0.15s, background 0.15s;
+            font-family: Consolas, Monaco, 'Courier New', monospace;
+            flex-shrink: 0;
+            max-width: 280px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .api-tab:hover {
+            color: var(--primary);
+            background: rgba(64, 128, 255, 0.04);
+        }
+        .api-tab.active {
+            color: var(--primary);
+            font-weight: 600;
+            border-bottom-color: var(--primary);
+            background: #fff;
+        }
+        .api-tab-arrow {
+            width: 36px;
+            min-width: 36px;
+            border: none;
+            border-left: 1px solid var(--border);
+            background: #fafbfc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #606266;
+            font-size: 18px;
+            line-height: 1;
+            flex-shrink: 0;
+            padding: 0;
+        }
+        .api-tab-arrow:first-child { border-left: none; border-right: 1px solid var(--border); }
+        .api-tab-arrow:hover:not(:disabled) { color: var(--primary); background: #f0f5ff; }
+        .api-tab-arrow:disabled { color: #c0c4cc; cursor: not-allowed; background: #fafbfc; }
+
+        .tools-panel-body { padding: 16px 20px 20px; }
+        .tool-desc-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+        .tool-desc-text {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.65;
+            margin-bottom: 18px;
+        }
+
+        .param-toggle {
+            display: inline-flex;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 14px;
+        }
+        .param-toggle-btn {
+            padding: 8px 20px;
+            font-size: 13px;
+            border: none;
+            background: #fff;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .param-toggle-btn.active {
+            background: var(--primary);
+            color: #fff;
+        }
+        .param-toggle-btn:not(.active):hover { background: #f5f7fa; }
+
+        .param-table-wrap {
+            width: 100%;
+            overflow-x: auto;
+            border: 1px solid #ebeef5;
+            border-radius: 6px;
+        }
+        .param-table-native {
+            width: 100%;
+            table-layout: fixed;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        .param-table-native thead th {
+            background: #f5f7fa;
+            color: #606266;
+            font-weight: 600;
+            text-align: left;
+            padding: 11px 16px;
+            border-bottom: 1px solid #ebeef5;
+            white-space: nowrap;
+        }
+        .param-table-native tbody td {
+            padding: 12px 16px;
+            color: var(--text-primary);
+            border-bottom: 1px solid #ebeef5;
+            vertical-align: middle;
+            word-break: break-word;
+        }
+        .param-table-native tbody tr:last-child td { border-bottom: none; }
+        .param-table-native tbody tr:hover td { background: #fafcff; }
+        .param-table-input .col-name { width: 22%; font-family: Consolas, Monaco, monospace; font-size: 12px; }
+        .param-table-input .col-desc { width: 46%; color: var(--text-secondary); }
+        .param-table-input .col-type { width: 16%; color: var(--text-secondary); }
+        .param-table-input .col-required { width: 16%; text-align: center; }
+
+        .param-table-output .col-out-name {
+            width: 20%;
+            font-family: Consolas, Monaco, monospace;
+            font-size: 12px;
+            vertical-align: top;
+        }
+        .param-table-output .col-out-type {
+            width: 14%;
+            color: var(--text-secondary);
+            vertical-align: top;
+        }
+        .param-table-output .col-out-body {
+            width: 66%;
+            vertical-align: top;
+            padding-top: 10px !important;
+            padding-bottom: 10px !important;
+        }
+        .return-body-json {
+            margin: 0;
+            padding: 12px 14px;
+            border: 1px solid #e4e7ed;
+            border-radius: 6px;
+            background: #fafbfc;
+            font-family: Consolas, Monaco, 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.55;
+            color: #303133;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .param-table-output tbody tr:hover td { background: #fafcff; }
+        .param-table-empty {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 24px 16px !important;
+        }
+
+        /* 计费标准 */
+        .billing-box {
+            background: #f9faff;
+            border-radius: 10px;
+            padding: 4px 20px 16px;
+            border: 1px solid #eef1f8;
+        }
+        .billing-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        .billing-table thead th {
+            text-align: left;
+            font-weight: 500;
+            color: #909399;
+            padding: 14px 12px 12px 0;
+            border-bottom: 1px solid #ebeef5;
+            white-space: nowrap;
+        }
+        .billing-table thead th:not(:first-child) { padding-left: 16px; }
+        .billing-table tbody td {
+            padding: 16px 12px 16px 0;
+            color: var(--text-primary);
+            vertical-align: top;
+            line-height: 1.5;
+        }
+        .billing-table tbody td:not(:first-child) { padding-left: 16px; }
+        .billing-quota-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .billing-info-icon {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            border: 1px solid #c0c4cc;
+            color: #909399;
+            font-size: 10px;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: help;
+            line-height: 1;
+        }
+        .billing-settlement {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .billing-settlement-line {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        .billing-settlement-line .val {
+            color: #1a1a1a;
+            font-weight: 600;
+        }
+
+        .not-found {
+            text-align: center;
+            padding: 80px 20px;
+            color: var(--text-muted);
+        }
+        .not-found a { color: var(--primary); }
+    </style>
+</head>
+<body>
+    <div id="app" v-cloak class="flex h-screen overflow-hidden">
+        <aside class="platform-sidebar">
+            <nav class="sidebar-nav">
+                <a class="nav-item" href="广场.html"><i data-lucide="layout-grid" class="nav-icon"></i> 智能体广场</a>
+                <a class="nav-item active" href="广场.html?view=component"><i data-lucide="puzzle" class="nav-icon"></i> 组件广场</a>
+            </nav>
+            <div class="sidebar-user">
+                <div class="sidebar-user-avatar">A</div>
+                <span>admin</span>
+            </div>
+        </aside>
+
+        <div class="main-area">
+            <div class="main-scroll" v-if="detail">
+                <nav class="breadcrumb">
+                    <a href="广场.html?view=component">组件广场</a>
+                    <span class="sep">/</span>
+                    <span class="current">{{ detail.name }}</span>
+                </nav>
+
+                <header class="detail-header">
+                    <div class="detail-icon">
+                        <span>{{ detail.emoji || '🧩' }}</span>
+                    </div>
+                    <div class="detail-title-block">
+                        <div class="detail-title-row">
+                            <h1 class="detail-title">{{ detail.name }}</h1>
+                            <div class="header-card-tags">
+                                <span class="card-tag category">{{ detail.categoryLabel }}</span>
+                                <span class="card-tag" :class="detail.pricing === '免费' ? 'price-free' : 'price-paid'">{{ detail.pricing }}</span>
+                            </div>
+                        </div>
+                        <div class="detail-meta">
+                            <span class="meta-item">来源：{{ detail.source }}</span>
+                            <span class="meta-item">发布时间：{{ detail.publishedAt }}</span>
+                        </div>
+                    </div>
+                </header>
+
+                <section class="section-block">
+                    <h2 class="section-title">组件描述</h2>
+                    <p class="section-desc">{{ detail.description }}</p>
+                </section>
+
+                <section class="section-block" v-if="detail.pricing === '收费' && detail.billing && detail.billing.length">
+                    <h2 class="section-title">计费标准</h2>
+                    <div class="billing-box">
+                        <table class="billing-table">
+                            <thead>
+                                <tr>
+                                    <th>计费项</th>
+                                    <th>
+                                        <span class="billing-quota-label">
+                                            免费额度
+                                            <el-tooltip content="免费额度用完后，将按计费标准扣费" placement="top">
+                                                <span class="billing-info-icon">i</span>
+                                            </el-tooltip>
+                                        </span>
+                                    </th>
+                                    <th>计费模式</th>
+                                    <th>结算模式&amp;价格</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="(row, idx) in detail.billing" :key="idx">
+                                    <td>{{ row.item }}</td>
+                                    <td>{{ row.freeQuota }}</td>
+                                    <td>{{ row.billingMode }}</td>
+                                    <td>
+                                        <div class="billing-settlement">
+                                            <div class="billing-settlement-line">
+                                                现金结算：<span class="val">{{ row.cashSettlement }}</span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section class="section-block tools-section" v-if="detail.tools && detail.tools.length">
+                    <h2 class="section-title">工具</h2>
+                    <div class="tools-panel">
+                        <div class="api-tabs-bar">
+                            <button
+                                v-if="showTabArrows"
+                                type="button"
+                                class="api-tab-arrow"
+                                :disabled="!canScrollLeft"
+                                @click="scrollTabs(-1)"
+                                aria-label="向左">‹</button>
+                            <div class="api-tabs-scroll" ref="tabsScrollRef">
+                                <span
+                                    v-for="(tool, idx) in detail.tools"
+                                    :key="tool.id"
+                                    class="api-tab"
+                                    :class="{ active: activeToolIndex === idx }"
+                                    :title="tool.name"
+                                    @click="selectTool(idx)">
+                                    {{ tool.name }}
+                                </span>
+                            </div>
+                            <button
+                                v-if="showTabArrows"
+                                type="button"
+                                class="api-tab-arrow"
+                                :disabled="!canScrollRight"
+                                @click="scrollTabs(1)"
+                                aria-label="向右">›</button>
+                        </div>
+
+                        <div class="tools-panel-body" v-if="activeTool">
+                            <div class="tool-desc-label">工具描述</div>
+                            <p class="tool-desc-text">{{ activeTool.description }}</p>
+
+                            <div class="param-toggle">
+                                <button
+                                    type="button"
+                                    class="param-toggle-btn"
+                                    :class="{ active: paramTab === 'input' }"
+                                    @click="paramTab = 'input'">输入参数</button>
+                                <button
+                                    type="button"
+                                    class="param-toggle-btn"
+                                    :class="{ active: paramTab === 'output' }"
+                                    @click="paramTab = 'output'">输出参数</button>
+                            </div>
+
+                            <div class="param-table-wrap">
+                                <table v-if="paramTab === 'input'" class="param-table-native param-table-input">
+                                    <thead>
+                                        <tr>
+                                            <th class="col-name">参数名称</th>
+                                            <th class="col-desc">参数描述</th>
+                                            <th class="col-type">参数类型</th>
+                                            <th class="col-required">是否必填</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="(row, rIdx) in currentInputParams" :key="rIdx">
+                                            <td class="col-name">{{ row.name }}</td>
+                                            <td class="col-desc">{{ row.desc }}</td>
+                                            <td class="col-type">{{ row.type }}</td>
+                                            <td class="col-required">{{ row.required ? '是' : '否' }}</td>
+                                        </tr>
+                                        <tr v-if="!currentInputParams.length">
+                                            <td colspan="4" class="param-table-empty">暂无参数</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                <table v-else class="param-table-native param-table-output">
+                                    <thead>
+                                        <tr>
+                                            <th class="col-out-name">参数名称</th>
+                                            <th class="col-out-type">参数类型</th>
+                                            <th class="col-out-body">返回体</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="(row, rIdx) in currentOutputParams" :key="rIdx">
+                                            <td class="col-out-name">{{ row.name }}</td>
+                                            <td class="col-out-type">{{ row.type }}</td>
+                                            <td class="col-out-body">
+                                                <pre class="return-body-json">{{ formatReturnBody(row.returnBody) }}</pre>
+                                            </td>
+                                        </tr>
+                                        <tr v-if="!currentOutputParams.length">
+                                            <td colspan="3" class="param-table-empty">暂无参数</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <div class="main-scroll not-found" v-else>
+                <p>未找到该组件</p>
+                <p style="margin-top:12px;font-size:13px;"><a href="广场.html?view=component">返回组件广场</a></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref, computed, onMounted, nextTick, watch } = Vue;
+
+        const PAID_COMPONENT_IDS = new Set([7, 12, 16, 17, 19, 22, 23, 24, 26]);
+
+        function createBilling(itemName) {
+            return [{
+                item: itemName,
+                freeQuota: '10 次',
+                billingMode: '计费模式-by次数',
+                cashSettlement: '0.03 元/次'
+            }];
+        }
+
+        /** 原型示例：EID 布置图识图组件 */
+        const EID_DETAIL = {
+            id: 'eid',
+            name: 'EID布置图转系统图-识图',
+            emoji: '📐',
+            categoryLabel: '研发设计',
+            componentType: '插件',
+            source: '官方',
+            pricing: '收费',
+            publishedAt: '2026-04-01',
+            description: '布置图图纸识别：包括识别布置图图元，电路连接，分电箱等',
+            billing: createBilling('EID布置图识图'),
+            tools: [
+                {
+                    id: 'create_task',
+                    name: 'create_recognition_task_api_recognition_post',
+                    description: '识别任务启动接口 功能描述：创建识别任务，进行子图设备识别 输入参数：layout_id项目id, file布置图文件 输出参数：layout_id任务id',
+                    inputParams: [
+                        { name: 'layout_id', desc: '布置图ID，唯一标识一个布置项目', type: 'string', required: true },
+                        { name: 'file', desc: '布置图文件', type: 'file', required: true }
+                    ],
+                    outputParams: [
+                        { name: 'layout_id', desc: '任务id', type: 'string', required: true },
+                        { name: 'status', desc: '任务状态', type: 'string', required: false }
+                    ]
+                },
+                {
+                    id: 'get_result',
+                    name: 'get_recognition_result_api_recognition_result_post',
+                    description: '识别结果查询接口 功能描述：根据任务 id 查询子图设备识别结果 输入参数：layout_id任务id 输出参数：识别结果 JSON',
+                    inputParams: [
+                        { name: 'layout_id', desc: '任务id', type: 'string', required: true }
+                    ],
+                    outputParams: [
+                        { name: 'result', desc: '识别结果数据', type: 'object', required: true }
+                    ]
+                },
+                {
+                    id: 'download_sub',
+                    name: 'download_sub_result_api_recognition_sub_result_get',
+                    description: '子图结果下载接口 功能描述：下载指定子图的识别结果文件 输入参数：layout_id, sub_id 输出参数：文件流',
+                    inputParams: [
+                        { name: 'layout_id', desc: '任务id', type: 'string', required: true },
+                        { name: 'sub_id', desc: '子图编号', type: 'string', required: true }
+                    ],
+                    outputParams: [
+                        { name: 'file', desc: '结果文件', type: 'file', required: true }
+                    ]
+                },
+                {
+                    id: 'get_layout',
+                    name: 'get_layout_metadata_api_layout_get',
+                    description: '布置图元数据查询接口 功能描述：获取布置图基础元数据与图元列表 输入参数：layout_id 输出参数：元数据对象',
+                    inputParams: [
+                        { name: 'layout_id', desc: '布置图ID', type: 'string', required: true }
+                    ],
+                    outputParams: [
+                        { name: 'metadata', desc: '图元与连接关系元数据', type: 'object', required: true }
+                    ]
+                }
+            ]
+        };
+
+        function T(id, name, description, inputParams, outputParams) {
+            return { id, name, description, inputParams, outputParams };
+        }
+        function p(name, desc, type = 'string', required = true) {
+            return { name, desc, type, required };
+        }
+        /** 输出参数：name + type + returnBody(JSON 结构) */
+        function o(name, type, returnBody) {
+            return { name, type, returnBody };
+        }
+
+        function normalizeOutputParams(list) {
+            if (!list || !list.length) return [];
+            return list.map(item => {
+                if (item.returnBody !== undefined) {
+                    return { name: item.name, type: item.type, returnBody: item.returnBody };
+                }
+                const key = item.name;
+                return {
+                    name: item.name,
+                    type: item.type,
+                    returnBody: {
+                        [key]: {
+                            type: item.type,
+                            title: item.desc || key
+                        }
+                    }
+                };
+            });
+        }
+
+        /** 与广场列表一致的来源 */
+        const PLAZA_SOURCE = {
+            1: '官方', 7: '官方', 8: '官方', 9: '官方', 10: '官方', 11: '官方', 12: '官方',
+            13: '第三方', 14: '第三方', 15: '第三方', 16: '第三方', 17: '第三方',
+            18: '第三方', 19: '第三方', 20: '第三方', 21: '第三方', 22: '第三方',
+            23: '第三方', 24: '第三方', 25: '官方', 26: '第三方', 27: '第三方'
+        };
+
+        /** 与广场列表一致的组件描述（兜底） */
+        const PLAZA_DESCRIPTIONS = {
+            1: '以插件形式接入任意外部 REST API，支持 GET/POST/PUT 等方法，可配置鉴权 Header、Query 参数、超时与重试策略，适用于对接 MES、CRM 及自建业务系统。',
+            7: '识别图片、PDF、扫描件中的印刷体与手写文字，输出结构化文本、坐标与版面信息，适用于票据录入、图纸归档、质检报告解析等场景。',
+            8: '作为工业物联插件连接 OPC-UA 服务器，支持点位订阅、批量读取与写入映射，可将产线设备数据实时送入智能体流程进行监控与告警。',
+            9: '对 JSON 报文进行路径提取、字段重命名、类型转换与 Schema 校验，便于在不同插件与外部系统之间完成数据格式适配与清洗。',
+            10: '按 Cron 表达式或固定间隔触发智能体任务，适用于周期性巡检、报表生成、数据同步等无人值守场景，支持时区与错过补偿策略。',
+            11: '在智能体运行过程中读写全局或会话级变量，支持默认值、类型约束与作用域隔离，用于跨步骤传递中间结果与上下文状态。',
+            12: '对文本、图片等内容进行敏感词、违规图像与合规策略检测，支持自定义词库与审核等级，可在输出发布前自动拦截风险内容。',
+            13: '向钉钉群机器人或指定成员发送 Markdown、链接卡片、ActionCard 等工作通知，支持 @ 指定人与异步回调确认。',
+            14: '通过企业微信应用向成员或部门推送文本、图文、小程序消息，适用于告警通知、审批提醒与运维播报等内部协同场景。',
+            15: '读取或写入飞书云文档、多维表格与知识库，实现智能体产出内容与团队协同文档的双向同步，支持增量更新与权限校验。',
+            16: '提供地理编码、逆地理编码、路径规划、周边 POI 查询与距离矩阵等位置服务能力，适用于物流调度、网点选址与出行分析。',
+            17: '查询企业工商登记、股权结构、司法风险、经营异常等公开商业数据，辅助供应商准入、合作伙伴尽调与合规审查。',
+            18: '通过 Modbus TCP/RTU 协议采集 PLC、仪表、传感器等设备的寄存器数据，支持批量轮询、字节序转换与断线重连。',
+            19: '上传、下载与管理对象存储文件，支持预签名 URL、分片上传、断点续传与生命周期策略，用于报告归档与附件分发。',
+            20: '订阅 Kafka Topic 作为智能体事件触发源，支持消费组、偏移量管理与死信处理，适用于接入业务系统实时事件流。',
+            21: '通过 SMTP 协议发送 HTML 正文、内嵌图片与附件邮件，支持 TLS 加密、抄送密送与发送结果回执，适用于告警与报告投递。',
+            22: '对 Elasticsearch 索引执行全文检索、聚合统计与文档写入，支持高亮、分页、过滤条件与多索引联合查询。',
+            23: '集成工业视觉算法包，对产线图像进行瑕疵检测与分类，输出缺陷类别、位置框、置信度与热力图，用于在线质检与返修判定。',
+            24: '对接 SAP 标准 BAPI、RFC 与 IDoc 接口，同步物料、订单、库存、生产计划等业务主数据，支持异步确认与错误重试。',
+            25: '提供可配置的 HTTP 回调入口，接收外部系统推送的 JSON/表单数据并触发智能体流程，支持签名校验、IP 白名单与请求日志。',
+            26: '调用阿里云短信服务发送验证码、告警与通知类短信，支持模板变量、发送频率限制与回执状态查询，适用于运维告警与用户触达。',
+            27: '订阅 MQTT Broker 主题接收设备上报消息，支持 QoS、遗嘱消息与 TLS 连接，可将 IoT 遥测数据实时驱动智能体分析与响应。'
+        };
+
+        function makeDetail(id, cfg) {
+            const isPaid = cfg.pricing === '收费' || PAID_COMPONENT_IDS.has(id);
+            return {
+                id,
+                name: cfg.name,
+                emoji: cfg.emoji,
+                categoryLabel: cfg.categoryLabel,
+                componentType: cfg.componentType || '插件',
+                source: cfg.source || PLAZA_SOURCE[id] || '官方',
+                pricing: isPaid ? '收费' : '免费',
+                publishedAt: cfg.publishedAt || '2026-04-01',
+                description: cfg.description || PLAZA_DESCRIPTIONS[id] || `${cfg.name} 组件，可在智能体流程编排中引用。`,
+                billing: isPaid ? createBilling(cfg.name) : undefined,
+                tools: cfg.tools
+            };
+        }
+
+        /** 广场全部组件详情（每组件 2～4 个工具） */
+        const COMPONENT_DETAILS = {
+            1: makeDetail(1, {
+                name: 'HTTP 请求', emoji: '🌐', categoryLabel: 'HTTP/API', componentType: '插件', pricing: '免费',
+                description: PLAZA_DESCRIPTIONS[1],
+                tools: [
+                    T('http_get', 'http_get_request', '发起 GET 请求，查询资源或拉取数据。', [p('url', '请求地址'), p('headers', '请求头 JSON', 'object', false)], [p('status_code', 'HTTP 状态码', 'integer'), p('body', '响应体', 'object')]),
+                    T('http_post', 'http_post_request', '发起 POST 请求，提交 JSON 或表单数据。', [p('url', '请求地址'), p('body', '请求体', 'object'), p('headers', '请求头', 'object', false)], [p('status_code', 'HTTP 状态码', 'integer'), p('body', '响应体', 'object')]),
+                    T('http_async', 'http_async_invoke', '异步 HTTP 调用，返回 task_id 供后续查询结果。', [p('url', '请求地址'), p('method', '请求方法 GET/POST', 'string'), p('body', '请求体', 'object', false)], [p('task_id', '异步任务 ID'), p('status', '任务状态')])
+                ]
+            }),
+            7: makeDetail(7, {
+                name: 'OCR 文字识别', emoji: '👁️', categoryLabel: '视觉算法', componentType: '插件', pricing: '收费',
+                description: '识别图片、PDF 中的印刷体与手写文字，输出结构化文本与坐标信息。',
+                publishedAt: '2026-03-15',
+                tools: [
+                    T('img', 'ocr_recognize_image', '单张图片 OCR，返回全文与行级坐标。', [p('image_url', '图片 URL'), p('lang', '语言 zh/en', 'string', false)], [p('text', '识别文本'), p('blocks', '文本块坐标', 'array')]),
+                    T('pdf', 'ocr_recognize_pdf', '多页 PDF 批量识别。', [p('file', 'PDF 文件', 'file'), p('page_range', '页码范围', 'string', false)], [p('pages', '每页结果', 'array')]),
+                    T('batch', 'ocr_batch_submit', '提交批量任务，异步处理多张图。', [p('images', '图片 URL 列表', 'array')], [p('job_id', '批量任务 ID')]),
+                    T('layout', 'ocr_layout_analysis', '版面分析：段落、表格、标题区域划分。', [p('image_url', '图片 URL')], [p('layout', '版面结构', 'object')])
+                ]
+            }),
+            8: makeDetail(8, {
+                name: '工业 OPC-UA 接入', emoji: '🏭', categoryLabel: '工业物联', componentType: '插件', pricing: '免费',
+                description: '读取 OPC-UA 服务器点位数据，支持订阅变化与批量点位映射。',
+                tools: [
+                    T('read', 'opcua_read_nodes', '批量读取节点当前值。', [p('endpoint', '服务器地址'), p('node_ids', '节点 ID 列表', 'array')], [p('values', '节点值列表', 'array')]),
+                    T('sub', 'opcua_subscribe', '订阅节点变化，回调或写入消息队列。', [p('endpoint', '服务器地址'), p('node_ids', '节点列表', 'array'), p('interval_ms', '采样间隔', 'integer', false)], [p('subscription_id', '订阅 ID')]),
+                    T('write', 'opcua_write_nodes', '向可写节点下发设定值。', [p('endpoint', '服务器地址'), p('writes', '写入项', 'array')], [p('results', '写入结果', 'array')])
+                ]
+            }),
+            9: makeDetail(9, {
+                name: 'JSON 解析转换', emoji: '{ }', categoryLabel: '数据服务', componentType: '插件', pricing: '免费',
+                description: '对 JSON 数据进行路径提取、字段映射与格式校验，便于流程间数据传递。',
+                tools: [
+                    T('parse', 'json_parse_path', '按 JSONPath 提取字段。', [p('json', '源 JSON', 'object'), p('path', 'JSONPath 表达式')], [p('value', '提取结果', 'object')]),
+                    T('map', 'json_transform_map', '按映射规则转换对象结构。', [p('json', '源数据', 'object'), p('mapping', '字段映射规则', 'object')], [p('output', '转换结果', 'object')]),
+                    T('valid', 'json_schema_validate', '使用 JSON Schema 校验数据。', [p('json', '待校验数据', 'object'), p('schema', 'Schema 定义', 'object')], [p('valid', '是否通过', 'boolean'), p('errors', '错误详情', 'array', false)])
+                ]
+            }),
+            10: makeDetail(10, {
+                name: '定时触发器', emoji: '⏰', categoryLabel: '数据服务', componentType: '插件', pricing: '免费',
+                description: '按 Cron 或固定间隔触发工作流，适用于周期性巡检与报表任务。',
+                tools: [
+                    T('cron', 'scheduler_register_cron', '注册 Cron 表达式定时任务。', [p('cron', 'Cron 表达式'), p('workflow_id', '目标工作流 ID'), p('timezone', '时区', 'string', false)], [p('schedule_id', '调度 ID')]),
+                    T('tick', 'scheduler_interval_trigger', '固定间隔触发，单位秒。', [p('interval_sec', '间隔秒数', 'integer'), p('workflow_id', '工作流 ID')], [p('next_run_at', '下次执行时间')])
+                ]
+            }),
+            11: makeDetail(11, {
+                name: '变量读写', emoji: '📝', categoryLabel: '数据服务', componentType: '插件', pricing: '免费',
+                description: '在流程运行过程中读写全局/会话变量，支持默认值与类型约束。',
+                tools: [
+                    T('get', 'variable_get', '读取变量值，支持作用域 global/session。', [p('key', '变量名'), p('scope', '作用域', 'string', false)], [p('value', '变量值', 'object'), p('type', '值类型', 'string')]),
+                    T('set', 'variable_set', '写入或更新变量。', [p('key', '变量名'), p('value', '变量值', 'object'), p('scope', '作用域', 'string', false)], [p('success', '是否成功', 'boolean')]),
+                    T('del', 'variable_delete', '删除指定变量。', [p('key', '变量名'), p('scope', '作用域', 'string', false)], [p('success', '是否成功', 'boolean')])
+                ]
+            }),
+            12: makeDetail(12, {
+                name: '内容安全审核', emoji: '🛡️', categoryLabel: '安全合规', componentType: '插件', pricing: '收费',
+                description: '对文本、图片进行敏感内容与合规检测，拦截违规输出。',
+                tools: [
+                    T('text', 'moderation_text', '文本敏感词、涉政涉黄检测。', [p('content', '待审文本')], [p('pass', '是否通过', 'boolean'), p('labels', '风险标签', 'array')]),
+                    T('image', 'moderation_image', '图片违规内容识别。', [p('image_url', '图片地址')], [p('pass', '是否通过', 'boolean'), p('risk_score', '风险分', 'number')]),
+                    T('batch', 'moderation_batch_audit', '批量审核多条内容。', [p('items', '待审项列表', 'array')], [p('results', '逐项结果', 'array')])
+                ]
+            }),
+            13: makeDetail(13, {
+                name: '钉钉消息推送', emoji: '💬', categoryLabel: '消息通知', componentType: '插件', pricing: '免费',
+                publisher: '钉钉开放平台',
+                tools: [
+                    T('text', 'dingtalk_send_text', '向群或用户发送文本消息。', [p('webhook', '机器人 Webhook'), p('content', '消息内容')], [p('msg_id', '消息 ID')]),
+                    T('md', 'dingtalk_send_markdown', '发送 Markdown 格式消息。', [p('webhook', 'Webhook'), p('title', '标题'), p('markdown', 'Markdown 正文')], [p('msg_id', '消息 ID')]),
+                    T('card', 'dingtalk_send_action_card', '发送行动卡片消息。', [p('webhook', 'Webhook'), p('card', '卡片 JSON', 'object')], [p('msg_id', '消息 ID')])
+                ]
+            }),
+            14: makeDetail(14, {
+                name: '企业微信通知', emoji: '📱', categoryLabel: '消息通知', componentType: '插件', pricing: '免费',
+                publisher: '企业微信',
+                tools: [
+                    T('send', 'wxwork_message_send', '应用消息推送至成员。', [p('agent_id', '应用 ID'), p('user_ids', '成员 ID 列表', 'array'), p('content', '消息内容')], [p('msg_id', '消息 ID')]),
+                    T('batch', 'wxwork_department_broadcast', '按部门广播通知。', [p('dept_id', '部门 ID'), p('content', '消息内容')], [p('task_id', '发送任务 ID')]),
+                    T('media', 'wxwork_upload_media', '上传图片/文件素材获取 media_id。', [p('type', 'image/file'), p('file', '媒体文件', 'file')], [p('media_id', '素材 ID')])
+                ]
+            }),
+            15: makeDetail(15, {
+                name: '飞书文档同步', emoji: '📄', categoryLabel: '协同办公', componentType: '插件', pricing: '免费',
+                publisher: '飞书',
+                tools: [
+                    T('doc', 'feishu_doc_read', '读取云文档纯文本或块结构。', [p('doc_token', '文档 token')], [p('content', '文档内容'), p('revision', '版本号', 'integer')]),
+                    T('sheet', 'feishu_sheet_write', '向多维表格写入行数据。', [p('spreadsheet_token', '表格 token'), p('rows', '行数据', 'array')], [p('updated_count', '更新行数', 'integer')]),
+                    T('base', 'feishu_bitable_query', '查询多维表格记录，支持筛选。', [p('app_token', '应用 token'), p('table_id', '数据表 ID'), p('filter', '筛选条件', 'object', false)], [p('records', '记录列表', 'array')])
+                ]
+            }),
+            16: makeDetail(16, {
+                name: '高德地图 LBS', emoji: '📍', categoryLabel: '地图位置', componentType: '插件', pricing: '收费',
+                description: '提供地理编码、路径规划、周边 POI 查询与距离矩阵等 LBS 能力，适用于物流、出行与选址分析场景。',
+                publisher: '高德开放平台',
+                tools: [
+                    T('geo', 'amap_geocode', '地址与经纬度互转。', [p('address', '地址', 'string', false), p('location', '经纬度', 'string', false)], [p('location', '坐标结果'), p('formatted_address', '格式化地址', 'string', false)]),
+                    T('route', 'amap_direction_driving', '驾车路径规划。', [p('origin', '起点坐标'), p('destination', '终点坐标')], [p('distance', '距离米', 'integer'), p('duration', '耗时秒', 'integer'), p('steps', '导航步骤', 'array')]),
+                    T('poi', 'amap_place_search', '周边 POI 关键词搜索。', [p('keywords', '关键词'), p('location', '中心点坐标')], [p('pois', 'POI 列表', 'array')]),
+                    T('dist', 'amap_distance_matrix', '批量计算两点间距离。', [p('origins', '起点列表', 'array'), p('destinations', '终点列表', 'array')], [p('matrix', '距离矩阵', 'array')])
+                ]
+            }),
+            17: makeDetail(17, {
+                name: '天眼查企业信息', emoji: '🏢', categoryLabel: '企业数据', componentType: '插件', pricing: '收费',
+                description: '查询企业工商信息、股权结构、经营风险等公开商业数据，辅助尽调与供应商评估。',
+                publisher: '天眼查',
+                tools: [
+                    T('base', 'tianyancha_company_base', '查询企业工商基本信息。', [p('keyword', '企业名称或统一社会信用代码')], [p('company', '企业信息', 'object')]),
+                    T('risk', 'tianyancha_risk_info', '经营异常、失信、诉讼等风险摘要。', [p('company_id', '企业 ID')], [p('risks', '风险条目', 'array')]),
+                    T('holder', 'tianyancha_shareholders', '股东及出资信息。', [p('company_id', '企业 ID')], [p('shareholders', '股东列表', 'array')])
+                ]
+            }),
+            18: makeDetail(18, {
+                name: 'Modbus 设备采集', emoji: '⚡', categoryLabel: '工业物联', componentType: '插件', pricing: '免费',
+                tools: [
+                    T('read', 'modbus_read_holding_registers', '读保持寄存器。', [p('host', '设备 IP'), p('port', '端口', 'integer', false), p('address', '起始地址', 'integer'), p('count', '数量', 'integer')], [p('values', '寄存器值', 'array')]),
+                    T('write', 'modbus_write_register', '写单个寄存器。', [p('host', '设备 IP'), p('address', '地址', 'integer'), p('value', '写入值', 'integer')], [p('success', '是否成功', 'boolean')]),
+                    T('test', 'modbus_connection_test', '测试 Modbus TCP 连接。', [p('host', '设备 IP'), p('port', '端口', 'integer', false)], [p('ok', '连通状态', 'boolean')])
+                ]
+            }),
+            19: makeDetail(19, {
+                name: '腾讯云 COS 存储', emoji: '☁️', categoryLabel: '文件存储', componentType: '插件', pricing: '收费',
+                description: '上传、下载对象存储文件，支持预签名 URL、分片上传与大文件断点续传。',
+                publisher: '腾讯云',
+                tools: [
+                    T('up', 'cos_object_upload', '上传对象到指定 Bucket。', [p('bucket', '存储桶'), p('key', '对象键'), p('file', '文件', 'file')], [p('etag', '对象 ETag'), p('url', '访问 URL')]),
+                    T('down', 'cos_object_download', '下载对象到本地或返回流。', [p('bucket', '存储桶'), p('key', '对象键')], [p('file_url', '临时下载链接')]),
+                    T('sign', 'cos_presigned_url', '生成预签名 URL。', [p('bucket', '存储桶'), p('key', '对象键'), p('expires_sec', '有效期秒', 'integer')], [p('signed_url', '签名 URL')])
+                ]
+            }),
+            20: makeDetail(20, {
+                name: 'Kafka 消息消费', emoji: '📨', categoryLabel: '数据服务', componentType: '插件', pricing: '免费',
+                tools: [
+                    T('consume', 'kafka_consume_messages', '拉取一批消息作为流程触发数据。', [p('brokers', 'Broker 地址'), p('topic', 'Topic'), p('group_id', '消费组')], [p('messages', '消息列表', 'array')]),
+                    T('produce', 'kafka_produce_message', '向 Topic 发送消息。', [p('brokers', 'Broker'), p('topic', 'Topic'), p('value', '消息体')], [p('offset', '写入偏移量', 'integer')]),
+                    T('commit', 'kafka_offset_commit', '提交消费位点。', [p('group_id', '消费组'), p('offsets', '位点映射', 'object')], [p('success', '是否成功', 'boolean')])
+                ]
+            }),
+            21: makeDetail(21, {
+                name: '邮件发送 SMTP', emoji: '✉️', categoryLabel: '消息通知', componentType: '插件', pricing: '免费',
+                tools: [
+                    T('html', 'smtp_send_html', '发送 HTML 正文邮件。', [p('to', '收件人'), p('subject', '主题'), p('html', 'HTML 内容')], [p('message_id', '邮件 ID')]),
+                    T('attach', 'smtp_send_with_attachment', '发送带附件邮件。', [p('to', '收件人'), p('subject', '主题'), p('body', '正文'), p('attachments', '附件列表', 'array')], [p('message_id', '邮件 ID')]),
+                    T('verify', 'smtp_verify_account', '验证 SMTP 账号配置。', [p('host', 'SMTP 主机'), p('user', '用户名'), p('password', '密码')], [p('ok', '验证结果', 'boolean')])
+                ]
+            }),
+            22: makeDetail(22, {
+                name: 'Elasticsearch 检索', emoji: '🔍', categoryLabel: '数据服务', componentType: '插件', pricing: '收费',
+                description: '对 Elasticsearch 索引执行全文检索、聚合分析与文档写入，支持高亮与分页。',
+                tools: [
+                    T('search', 'es_search', '全文检索，支持高亮与分页。', [p('index', '索引名'), p('query', '查询 DSL', 'object')], [p('hits', '命中列表', 'array'), p('total', '总数', 'integer')]),
+                    T('agg', 'es_aggregate', '聚合统计查询。', [p('index', '索引名'), p('aggs', '聚合定义', 'object')], [p('aggregations', '聚合结果', 'object')]),
+                    T('index', 'es_index_document', '写入或更新文档。', [p('index', '索引'), p('id', '文档 ID', 'string', false), p('doc', '文档体', 'object')], [p('result', '写入结果')]),
+                    T('bulk', 'es_bulk', '批量写入多条文档。', [p('index', '索引'), p('docs', '文档数组', 'array')], [p('errors', '失败项', 'array', false), p('took_ms', '耗时', 'integer')])
+                ]
+            }),
+            23: makeDetail(23, {
+                name: '图像缺陷检测 SDK', emoji: '📷', categoryLabel: '视觉算法', componentType: '插件', pricing: '收费',
+                description: '集成第三方视觉算法包，输出瑕疵类别、位置框与置信度。',
+                tools: [
+                    T('detect', 'vision_defect_detect', '单图缺陷检测，返回框与类别。', [p('image_url', '图片 URL'), p('model_id', '模型 ID', 'string', false)], [p('defects', '缺陷列表', 'array'), p('image_size', '尺寸', 'object')]),
+                    T('batch', 'vision_defect_batch', '批量图片异步检测。', [p('images', '图片 URL 列表', 'array')], [p('job_id', '任务 ID')]),
+                    T('feedback', 'vision_defect_feedback', '提交误检/漏检样本用于模型迭代。', [p('sample_id', '样本 ID'), p('label', '正确标签'), p('boxes', '标注框', 'array', false)], [p('accepted', '是否接收', 'boolean')]),
+                    T('report', 'vision_defect_export_report', '导出检测报告 PDF/Excel。', [p('job_id', '任务 ID'), p('format', 'pdf/xlsx')], [p('report_url', '报告下载地址')])
+                ]
+            }),
+            24: makeDetail(24, {
+                name: 'SAP ERP 接口', emoji: '📦', categoryLabel: '企业数据', componentType: '插件', pricing: '收费',
+                description: '对接 SAP 标准 BAPI/IDoc 接口，同步物料、订单、库存等业务主数据。',
+                publisher: 'SAP',
+                tools: [
+                    T('bapi', 'sap_bapi_call', '调用 BAPI 函数执行业务操作。', [p('function_name', 'BAPI 名称'), p('import_params', '入参', 'object')], [p('export_params', '出参', 'object'), p('return_messages', '返回消息', 'array')]),
+                    T('idoc', 'sap_idoc_send', '发送 IDoc 至 SAP。', [p('idoc_type', 'IDoc 类型'), p('payload', 'IDoc 数据', 'object')], [p('doc_number', '凭证号')]),
+                    T('mat', 'sap_material_query', '查询物料主数据。', [p('material_no', '物料号'), p('plant', '工厂', 'string', false)], [p('material', '物料信息', 'object')])
+                ]
+            }),
+            25: makeDetail(25, {
+                name: 'Webhook 入站', emoji: '🔗', categoryLabel: 'HTTP/API', componentType: '插件', pricing: '免费',
+                description: PLAZA_DESCRIPTIONS[25],
+                tools: [
+                    T('register', 'webhook_register', '注册回调 URL 并绑定智能体触发流程。', [p('path', '回调路径'), p('workflow_id', '目标流程 ID'), p('secret', '签名密钥', 'string', false)], [p('webhook_id', 'Webhook ID'), p('full_url', '完整回调地址')]),
+                    T('verify', 'webhook_verify_signature', '校验请求签名是否合法。', [p('payload', '请求体', 'object'), p('signature', '签名 Header'), p('secret', '密钥')], [p('valid', '是否通过', 'boolean')])
+                ]
+            }),
+            26: makeDetail(26, {
+                name: '阿里云短信', emoji: '📲', categoryLabel: '消息通知', componentType: '插件', pricing: '收费',
+                description: PLAZA_DESCRIPTIONS[26],
+                tools: [
+                    T('send', 'aliyun_sms_send', '发送模板短信。', [p('phone', '手机号'), p('template_code', '模板 CODE'), p('params', '模板变量', 'object', false)], [p('biz_id', '发送流水号'), p('status', '发送状态')]),
+                    T('query', 'aliyun_sms_query', '查询短信发送回执。', [p('biz_id', '发送流水号')], [p('deliver_status', '送达状态'), p('detail', '回执详情', 'object')])
+                ]
+            }),
+            27: makeDetail(27, {
+                name: 'MQTT 设备订阅', emoji: '📡', categoryLabel: '工业物联', componentType: '插件', pricing: '免费',
+                description: PLAZA_DESCRIPTIONS[27],
+                tools: [
+                    T('sub', 'mqtt_subscribe', '订阅主题并接收消息。', [p('broker', 'Broker 地址'), p('topic', '主题'), p('qos', 'QoS 0-2', 'integer', false)], [p('subscription_id', '订阅 ID')]),
+                    T('pub', 'mqtt_publish', '向主题发布消息。', [p('broker', 'Broker 地址'), p('topic', '主题'), p('payload', '消息体'), p('qos', 'QoS', 'integer', false)], [p('success', '是否成功', 'boolean')])
+                ]
+            })
+        };
+
+        function resolveDetail(idParam) {
+            if (!idParam || idParam === 'eid') return EID_DETAIL;
+            const numId = Number(idParam);
+            if (COMPONENT_DETAILS[numId]) return COMPONENT_DETAILS[numId];
+            return COMPONENT_DETAILS[1];
+        }
+
+        const app = createApp({
+            setup() {
+                const idParam = new URLSearchParams(location.search).get('id');
+                const detail = ref(resolveDetail(idParam));
+                const activeToolIndex = ref(0);
+                const paramTab = ref('input');
+                const tabsScrollRef = ref(null);
+                const canScrollLeft = ref(false);
+                const canScrollRight = ref(false);
+
+                const showTabArrows = computed(() => (detail.value?.tools?.length || 0) > 1);
+
+                const activeTool = computed(() => {
+                    const tools = detail.value?.tools || [];
+                    return tools[activeToolIndex.value] || null;
+                });
+
+                const currentInputParams = computed(() => activeTool.value?.inputParams || []);
+                const currentOutputParams = computed(() =>
+                    normalizeOutputParams(activeTool.value?.outputParams || [])
+                );
+
+                function formatReturnBody(body) {
+                    if (body == null) return '{}';
+                    if (typeof body === 'string') return body;
+                    try {
+                        return JSON.stringify(body, null, 2);
+                    } catch (e) {
+                        return String(body);
+                    }
+                }
+
+                function updateScrollArrows() {
+                    const el = tabsScrollRef.value;
+                    if (!el || !showTabArrows.value) {
+                        canScrollLeft.value = false;
+                        canScrollRight.value = false;
+                        return;
+                    }
+                    canScrollLeft.value = el.scrollLeft > 2;
+                    canScrollRight.value = el.scrollLeft + el.clientWidth < el.scrollWidth - 2;
+                }
+
+                function scrollTabs(dir) {
+                    const el = tabsScrollRef.value;
+                    if (!el) return;
+                    el.scrollBy({ left: dir * 240, behavior: 'smooth' });
+                    setTimeout(updateScrollArrows, 320);
+                }
+
+                function selectTool(idx) {
+                    activeToolIndex.value = idx;
+                    paramTab.value = 'input';
+                    nextTick(updateScrollArrows);
+                }
+
+                function bindTabsScroll() {
+                    const el = tabsScrollRef.value;
+                    if (!el) return;
+                    el.removeEventListener('scroll', updateScrollArrows);
+                    el.addEventListener('scroll', updateScrollArrows);
+                }
+
+                watch(activeToolIndex, () => { paramTab.value = 'input'; });
+                watch(() => detail.value?.tools?.length, () => {
+                    nextTick(() => {
+                        updateScrollArrows();
+                        bindTabsScroll();
+                    });
+                });
+
+                onMounted(() => {
+                    document.title = detail.value ? `${detail.value.name} - 组件详情` : '组件详情';
+                    nextTick(() => {
+                        if (window.lucide) lucide.createIcons();
+                        updateScrollArrows();
+                        bindTabsScroll();
+                        window.addEventListener('resize', updateScrollArrows);
+                    });
+                });
+
+                return {
+                    detail,
+                    activeToolIndex,
+                    paramTab,
+                    tabsScrollRef,
+                    showTabArrows,
+                    canScrollLeft,
+                    canScrollRight,
+                    activeTool,
+                    currentInputParams,
+                    currentOutputParams,
+                    formatReturnBody,
+                    scrollTabs,
+                    selectTool
+                };
+            }
+        });
+
+        for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
+            app.component(key, component);
+        }
+        app.use(ElementPlus, { locale: ElementPlusLocaleZhCn });
+        app.mount('#app');
+    </script>
+</body>
+</html>

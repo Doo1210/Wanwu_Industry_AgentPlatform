@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>广场</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.4.21/dist/vue.global.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/lucide.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-plus@2.5.6/dist/index.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@element-plus/icons-vue@2.3.1"></script>
+    <script src="https://cdn.jsdelivr.net/npm/element-plus@2.5.6"></script>
+    <script src="https://cdn.jsdelivr.net/npm/element-plus@2.5.6/dist/locale/zh-cn.min.js"></script>
+    <style>
+        :root {
+            --primary: #4080ff;
+            --primary-light: #ecf3ff;
+            --sidebar-bg: #f5f7fa;
+            --page-bg: #f5f7fa;
+            --border: #e4e7ed;
+            --text-primary: #303133;
+            --text-secondary: #606266;
+            --text-muted: #909399;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: "PingFang SC", "Microsoft YaHei", "Inter", system-ui, sans-serif;
+            background: var(--page-bg);
+            color: var(--text-primary);
+        }
+        [v-cloak] { display: none; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background: #c0c4cc; border-radius: 3px; }
+
+        /* ===== 侧边栏 ===== */
+        .platform-sidebar {
+            width: 220px;
+            min-width: 220px;
+            background: #fff;
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        .sidebar-nav {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px 8px 16px;
+        }
+        .nav-group-title {
+            font-size: 12px;
+            color: var(--text-muted);
+            padding: 10px 10px 4px;
+            font-weight: 500;
+        }
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            border-radius: 6px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.15s;
+            text-decoration: none;
+        }
+        .nav-item:hover { background: #f5f7fa; color: var(--text-primary); }
+        .nav-item.active {
+            background: var(--primary-light);
+            color: var(--primary);
+            font-weight: 600;
+        }
+        .nav-item .nav-icon { width: 16px; height: 16px; flex-shrink: 0; opacity: 0.75; }
+        .nav-item.active .nav-icon { opacity: 1; }
+        .sidebar-user {
+            padding: 12px 16px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        .sidebar-user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4080ff, #69b1ff);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        /* ===== 主内容区 ===== */
+        .main-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .main-scroll {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 28px 32px;
+        }
+        .page-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin: 0 0 16px;
+        }
+
+        /* 顶部 Tab */
+        .industry-tabs {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .tab-list { display: flex; gap: 28px; }
+        .tab-item {
+            padding: 10px 0;
+            font-size: 14px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            position: relative;
+            transition: color 0.15s;
+        }
+        .tab-item:hover { color: var(--primary); }
+        .tab-item.active {
+            color: var(--primary);
+            font-weight: 600;
+        }
+        .tab-item.active::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: -1px;
+            height: 2px;
+            background: var(--primary);
+            border-radius: 1px;
+        }
+        .toolbar-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding-bottom: 8px;
+        }
+        .fav-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 14px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: #fff;
+            font-size: 13px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .fav-btn:hover { border-color: var(--primary); color: var(--primary); }
+        .fav-btn.active { border-color: #f5a623; color: #e6a23c; background: #fdf6ec; }
+
+        /* 场景/终端/应用类别筛选 — 单行展示 */
+        .scene-filter {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 16px;
+            flex-wrap: nowrap;
+            min-width: 0;
+        }
+        .scene-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            font-weight: 500;
+            flex-shrink: 0;
+            line-height: 1;
+        }
+        .scene-tags {
+            display: flex;
+            flex-wrap: nowrap;
+            align-items: center;
+            gap: 5px;
+            flex: 1;
+            min-width: 0;
+            overflow-x: auto;
+            padding-bottom: 2px;
+            scrollbar-width: none;
+        }
+        .scene-tags::-webkit-scrollbar { display: none; }
+        .scene-tag {
+            padding: 3px 9px;
+            border-radius: 12px;
+            font-size: 11px;
+            line-height: 1.35;
+            cursor: pointer;
+            border: 1px solid transparent;
+            background: #f0f2f5;
+            color: var(--text-secondary);
+            transition: all 0.15s;
+            user-select: none;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .scene-tag:hover { color: var(--primary); background: var(--primary-light); }
+        .scene-tag.active {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+        }
+
+        /* 卡片网格 */
+        .agent-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+        @media (max-width: 1280px) {
+            .agent-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 900px) {
+            .agent-grid { grid-template-columns: 1fr; }
+        }
+        .agent-card {
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px 18px;
+            cursor: pointer;
+            transition: box-shadow 0.2s, border-color 0.2s;
+            display: flex;
+            flex-direction: column;
+            min-height: 168px;
+        }
+        .agent-card:hover {
+            box-shadow: 0 4px 12px rgba(64, 128, 255, 0.08);
+            border-color: #c6d8ff;
+        }
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+        .card-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+        .card-icon.blue { background: #ecf3ff; }
+        .card-icon.green { background: #e8f8f0; }
+        .card-icon.purple { background: #f3ecff; }
+        .card-icon.orange { background: #fff3e8; }
+        .card-icon.teal { background: #e6fffb; }
+        .card-title-wrap { flex: 1; min-width: 0; }
+        .card-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #303133;
+            line-height: 1.45;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .card-star {
+            flex-shrink: 0;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            color: #c0c4cc;
+            transition: color 0.15s;
+        }
+        .card-star:hover, .card-star.favorited { color: #f5a623; }
+        .card-desc {
+            font-size: 12px;
+            color: var(--text-muted);
+            line-height: 1.6;
+            margin: 0 0 12px;
+            min-height: 0;
+            max-height: calc(1.6em * 2);
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            text-overflow: ellipsis;
+            word-break: break-word;
+        }
+        .card-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: auto;
+            padding-top: 4px;
+        }
+        .card-tags { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+        .meta-tag {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 400;
+        }
+        .meta-tag.industry-green { background: #f6faf8; color: #6b9a82; border: 1px solid #e8f0ec; }
+        .meta-tag.industry-teal { background: #f6fbfb; color: #6b9a9a; border: 1px solid #e8f0f0; }
+        .meta-tag.industry-blue { background: #f6f8fc; color: #7a94c4; border: 1px solid #e8edf4; }
+        .meta-tag.industry-orange { background: #fcfaf6; color: #b8956a; border: 1px solid #f0ebe4; }
+        .meta-tag.industry-purple { background: #f9f7fc; color: #9585b0; border: 1px solid #ebe8f0; }
+        .meta-tag.type-single { background: #f9f7fc; color: #9585b0; border: 1px solid #ebe8f0; }
+        .meta-tag.type-multi { background: #f6f9fc; color: #7a94c4; border: 1px solid #e8edf4; }
+        .meta-tag.type-workflow { background: #fcfaf6; color: #b8956a; border: 1px solid #f0ebe4; }
+        .meta-tag.type-chatflow { background: #f6faf8; color: #6b9a82; border: 1px solid #e8f0ec; }
+        .meta-tag.scope-global { background: #f6f8fc; color: #7a94c4; border: 1px solid #e8edf4; }
+        .meta-tag.scope-org { background: #fcfaf6; color: #b8956a; border: 1px solid #f0ebe4; }
+        .meta-tag.scope-private { background: #f7f8fa; color: #909399; border: 1px solid #ebeef2; }
+        .card-time {
+            font-size: 11px;
+            color: #c0c4cc;
+            white-space: nowrap;
+            margin-left: auto;
+        }
+
+        .empty-state {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+        }
+        .empty-state .empty-icon { font-size: 48px; margin-bottom: 12px; opacity: 0.4; }
+
+        /* ===== 组件广场 ===== */
+        .page-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 16px;
+            padding-bottom: 0;
+            border-bottom: 1px solid var(--border);
+            flex-wrap: nowrap;
+            min-width: 0;
+        }
+        .toolbar-filter {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+            min-width: 0;
+        }
+        .component-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+        @media (max-width: 1280px) {
+            .component-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 900px) {
+            .component-grid { grid-template-columns: 1fr; }
+        }
+        .component-card {
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px 18px;
+            cursor: pointer;
+            transition: box-shadow 0.2s, border-color 0.2s;
+            display: flex;
+            flex-direction: column;
+            min-height: 168px;
+        }
+        .component-card:hover {
+            box-shadow: 0 4px 12px rgba(64, 128, 255, 0.08);
+            border-color: #c6d8ff;
+        }
+        .component-card .card-title {
+            flex: 1;
+            min-width: 0;
+            font-size: 14px;
+            font-weight: 600;
+            color: #303133;
+            line-height: 1.45;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .card-tag {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 400;
+            line-height: 1.4;
+        }
+        .card-tag.source-official {
+            background: #f6f8fc;
+            color: #7a94c4;
+            border: 1px solid #e8edf4;
+        }
+        .card-tag.source-third {
+            background: #fcfaf6;
+            color: #b8956a;
+            border: 1px solid #f0ebe4;
+        }
+        .card-tag.price-free {
+            background: #f6faf8;
+            color: #6b9a82;
+            border: 1px solid #e8f0ec;
+        }
+        .card-tag.price-paid {
+            background: #fcf6f6;
+            color: #c97a7a;
+            border: 1px solid #f0e4e4;
+        }
+        .card-tag.category {
+            background: #f7f8fa;
+            color: #909399;
+            border: 1px solid #ebeef2;
+        }
+        .component-card .card-footer .card-source {
+            flex-shrink: 0;
+            margin-left: auto;
+        }
+
+        /* Element Plus 微调 */
+        .toolbar-right .el-input__wrapper { border-radius: 6px; }
+        .toolbar-right .el-select .el-input__wrapper { border-radius: 6px; }
+    </style>
+</head>
+<body>
+    <div id="app" v-cloak class="flex h-screen overflow-hidden">
+        <!-- 左侧导航 -->
+        <aside class="platform-sidebar">
+            <nav class="sidebar-nav">
+                <div class="nav-item" :class="{ active: activeView === 'agent' }" @click="switchView('agent')">
+                    <i data-lucide="layout-grid" class="nav-icon"></i> 智能体广场
+                </div>
+                <div class="nav-item" :class="{ active: activeView === 'component' }" @click="switchView('component')">
+                    <i data-lucide="puzzle" class="nav-icon"></i> 组件广场
+                </div>
+            </nav>
+            <div class="sidebar-user">
+                <div class="sidebar-user-avatar">A</div>
+                <span>admin</span>
+            </div>
+        </aside>
+
+        <!-- 主内容 -->
+        <div class="main-area">
+            <div class="main-scroll">
+                <!-- ========== 智能体广场 ========== -->
+                <template v-if="activeView === 'agent'">
+                <h1 class="page-title">智能体广场</h1>
+
+                <!-- 行业 Tab + 搜索栏 -->
+                <div class="industry-tabs">
+                    <div class="tab-list">
+                        <span
+                            v-for="tab in industryTabs"
+                            :key="tab.id"
+                            class="tab-item"
+                            :class="{ active: activeIndustry === tab.id }"
+                            @click="switchIndustry(tab.id)">
+                            {{ tab.label }}
+                        </span>
+                    </div>
+                    <div class="toolbar-right">
+                        <el-input
+                            v-model="searchKeyword"
+                            placeholder="请输入智能体名称搜索"
+                            prefix-icon="Search"
+                            clearable
+                            style="width: 240px;"
+                            size="default">
+                        </el-input>
+                        <el-select v-model="publicScope" placeholder="公开范围" style="width: 130px;" clearable>
+                            <el-option label="全局公开" value="global"></el-option>
+                            <el-option label="组织内公开" value="org"></el-option>
+                            <el-option label="仅自己可见" value="private"></el-option>
+                        </el-select>
+                        <button
+                            type="button"
+                            class="fav-btn"
+                            :class="{ active: showFavoritesOnly }"
+                            @click="showFavoritesOnly = !showFavoritesOnly">
+                            <i data-lucide="star" style="width:14px;height:14px;"></i>
+                            我收藏的
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 按 Tab 切换的二级筛选 -->
+                <div class="scene-filter">
+                    <span class="scene-label">{{ currentFilterConfig.label }}</span>
+                    <div class="scene-tags">
+                        <span
+                            v-for="tag in currentFilterConfig.tags"
+                            :key="tag"
+                            class="scene-tag"
+                            :class="{ active: activeFilter === tag }"
+                            @click="activeFilter = tag">
+                            {{ tag }}
+                        </span>
+                    </div>
+                </div>
+
+                <!-- 卡片网格 -->
+                <div class="agent-grid">
+                    <div
+                        v-for="agent in filteredAgents"
+                        :key="agent.id"
+                        class="agent-card"
+                        @click="onCardClick(agent)">
+                        <div class="card-header">
+                            <div class="card-icon" :class="agent.iconColor">
+                                <span>{{ agent.emoji }}</span>
+                            </div>
+                            <div class="card-title-wrap">
+                                <div class="card-title">{{ agent.title }}</div>
+                            </div>
+                            <svg
+                                class="card-star"
+                                :class="{ favorited: agent.favorited }"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                @click.stop="toggleFavorite(agent)">
+                                <polygon
+                                    :fill="agent.favorited ? 'currentColor' : 'none'"
+                                    points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                            </svg>
+                        </div>
+                        <p class="card-desc">{{ agent.description }}</p>
+                        <div class="card-footer">
+                            <div class="card-tags">
+                                <span class="meta-tag" :class="agent.industryClass">{{ agent.industry }}</span>
+                                <span class="meta-tag" :class="getAgentTypeClass(agent.agentType)">{{ agent.agentType }}</span>
+                                <span class="meta-tag" :class="getScopeClass(agent.scope)">{{ agent.scope }}</span>
+                            </div>
+                            <span class="card-time">{{ agent.updatedAt }}</span>
+                        </div>
+                    </div>
+
+                    <div v-if="filteredAgents.length === 0" class="empty-state">
+                        <div class="empty-icon">🔍</div>
+                        <p>暂无匹配的智能体模板</p>
+                        <p style="font-size:12px;margin-top:4px;">尝试调整搜索关键词或筛选条件</p>
+                    </div>
+                </div>
+                </template>
+
+                <!-- ========== 组件广场 ========== -->
+                <template v-if="activeView === 'component'">
+                <h1 class="page-title">组件广场</h1>
+
+                <div class="page-toolbar">
+                    <div class="toolbar-filter">
+                        <span class="scene-label">分类</span>
+                        <div class="scene-tags">
+                            <span
+                                v-for="tag in categoryTags"
+                                :key="tag"
+                                class="scene-tag"
+                                :class="{ active: activeCategory === tag }"
+                                @click="activeCategory = tag">
+                                {{ tag }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="toolbar-right">
+                        <el-input
+                            v-model="componentSearchKeyword"
+                            placeholder="请输入组件名称搜索"
+                            prefix-icon="Search"
+                            clearable
+                            style="width: 240px;">
+                        </el-input>
+                    </div>
+                </div>
+
+                <div class="component-grid">
+                    <div
+                        v-for="item in filteredComponents"
+                        :key="item.id"
+                        class="component-card"
+                        @click="onComponentClick(item)">
+                        <div class="card-header">
+                            <div class="card-icon" :class="item.iconColor">
+                                <span>{{ item.emoji }}</span>
+                            </div>
+                            <div class="card-title">{{ item.name }}</div>
+                        </div>
+                        <p class="card-desc">{{ item.description }}</p>
+                        <div class="card-footer">
+                            <div class="card-tags">
+                                <span class="card-tag category">{{ item.category }}</span>
+                                <span class="card-tag" :class="item.pricing === '免费' ? 'price-free' : 'price-paid'">{{ item.pricing }}</span>
+                            </div>
+                            <span class="card-tag card-source" :class="item.source === '官方' ? 'source-official' : 'source-third'">{{ item.source }}</span>
+                        </div>
+                    </div>
+                    <div v-if="filteredComponents.length === 0" class="empty-state">
+                        <div style="font-size:48px;opacity:0.4;margin-bottom:12px;">🔍</div>
+                        <p>暂无匹配的组件</p>
+                        <p style="font-size:12px;margin-top:4px;">尝试调整搜索关键词或筛选条件</p>
+                    </div>
+                </div>
+                </template>
+            </div>
+        </div>
+    </div>
+
+    <script src="agents-data.js"></script>
+    <script>
+        const { createApp, ref, computed, onMounted, nextTick, watch } = Vue;
+
+        const CATEGORY_TAGS = ['全部', 'HTTP/API', '消息通知', '工业物联', '视觉算法', '数据服务', '协同办公', '地图位置', '企业数据', '文件存储', '安全合规'];
+        const COMPONENT_META = {
+            1: { pricing: '免费', category: 'HTTP/API' },
+            7: { pricing: '收费', category: '视觉算法' },
+            8: { pricing: '免费', category: '工业物联' },
+            9: { pricing: '免费', category: '数据服务' },
+            10: { pricing: '免费', category: '数据服务' },
+            11: { pricing: '免费', category: '数据服务' },
+            12: { pricing: '收费', category: '安全合规' },
+            13: { pricing: '免费', category: '消息通知' },
+            14: { pricing: '免费', category: '消息通知' },
+            15: { pricing: '免费', category: '协同办公' },
+            16: { pricing: '收费', category: '地图位置' },
+            17: { pricing: '收费', category: '企业数据' },
+            18: { pricing: '免费', category: '工业物联' },
+            19: { pricing: '收费', category: '文件存储' },
+            20: { pricing: '免费', category: '数据服务' },
+            21: { pricing: '免费', category: '消息通知' },
+            22: { pricing: '收费', category: '数据服务' },
+            23: { pricing: '收费', category: '视觉算法' },
+            24: { pricing: '收费', category: '企业数据' },
+            25: { pricing: '免费', category: 'HTTP/API' },
+            26: { pricing: '收费', category: '消息通知' },
+            27: { pricing: '免费', category: '工业物联' }
+        };
+        const COMPONENT_LIST = [
+            {
+                id: 1, name: 'HTTP 请求', source: '官方', emoji: '🌐', iconColor: 'blue',
+                description: '以插件形式接入任意外部 REST API，支持 GET/POST/PUT 等方法，可配置鉴权 Header、Query 参数、超时与重试策略，适用于对接 MES、CRM 及自建业务系统。'
+            },
+            {
+                id: 7, name: 'OCR 文字识别', source: '官方', emoji: '👁️', iconColor: 'orange',
+                description: '识别图片、PDF、扫描件中的印刷体与手写文字，输出结构化文本、坐标与版面信息，适用于票据录入、图纸归档、质检报告解析等场景。'
+            },
+            {
+                id: 8, name: '工业 OPC-UA 接入', source: '官方', emoji: '🏭', iconColor: 'teal',
+                description: '作为工业物联插件连接 OPC-UA 服务器，支持点位订阅、批量读取与写入映射，可将产线设备数据实时送入智能体流程进行监控与告警。'
+            },
+            {
+                id: 9, name: 'JSON 解析转换', source: '官方', emoji: '{ }', iconColor: 'gray',
+                description: '对 JSON 报文进行路径提取、字段重命名、类型转换与 Schema 校验，便于在不同插件与外部系统之间完成数据格式适配与清洗。'
+            },
+            {
+                id: 10, name: '定时触发器', source: '官方', emoji: '⏰', iconColor: 'blue',
+                description: '按 Cron 表达式或固定间隔触发智能体任务，适用于周期性巡检、报表生成、数据同步等无人值守场景，支持时区与错过补偿策略。'
+            },
+            {
+                id: 11, name: '变量读写', source: '官方', emoji: '📝', iconColor: 'green',
+                description: '在智能体运行过程中读写全局或会话级变量，支持默认值、类型约束与作用域隔离，用于跨步骤传递中间结果与上下文状态。'
+            },
+            {
+                id: 12, name: '内容安全审核', source: '官方', emoji: '🛡️', iconColor: 'purple',
+                description: '对文本、图片等内容进行敏感词、违规图像与合规策略检测，支持自定义词库与审核等级，可在输出发布前自动拦截风险内容。'
+            },
+            {
+                id: 13, name: '钉钉消息推送', source: '第三方', emoji: '💬', iconColor: 'blue',
+                description: '向钉钉群机器人或指定成员发送 Markdown、链接卡片、ActionCard 等工作通知，支持 @ 指定人与异步回调确认。'
+            },
+            {
+                id: 14, name: '企业微信通知', source: '第三方', emoji: '📱', iconColor: 'green',
+                description: '通过企业微信应用向成员或部门推送文本、图文、小程序消息，适用于告警通知、审批提醒与运维播报等内部协同场景。'
+            },
+            {
+                id: 15, name: '飞书文档同步', source: '第三方', emoji: '📄', iconColor: 'orange',
+                description: '读取或写入飞书云文档、多维表格与知识库，实现智能体产出内容与团队协同文档的双向同步，支持增量更新与权限校验。'
+            },
+            {
+                id: 16, name: '高德地图 LBS', source: '第三方', emoji: '📍', iconColor: 'teal',
+                description: '提供地理编码、逆地理编码、路径规划、周边 POI 查询与距离矩阵等位置服务能力，适用于物流调度、网点选址与出行分析。'
+            },
+            {
+                id: 17, name: '天眼查企业信息', source: '第三方', emoji: '🏢', iconColor: 'blue',
+                description: '查询企业工商登记、股权结构、司法风险、经营异常等公开商业数据，辅助供应商准入、合作伙伴尽调与合规审查。'
+            },
+            {
+                id: 18, name: 'Modbus 设备采集', source: '第三方', emoji: '⚡', iconColor: 'orange',
+                description: '通过 Modbus TCP/RTU 协议采集 PLC、仪表、传感器等设备的寄存器数据，支持批量轮询、字节序转换与断线重连。'
+            },
+            {
+                id: 19, name: '腾讯云 COS 存储', source: '第三方', emoji: '☁️', iconColor: 'blue',
+                description: '上传、下载与管理对象存储文件，支持预签名 URL、分片上传、断点续传与生命周期策略，用于报告归档与附件分发。'
+            },
+            {
+                id: 20, name: 'Kafka 消息消费', source: '第三方', emoji: '📨', iconColor: 'purple',
+                description: '订阅 Kafka Topic 作为智能体事件触发源，支持消费组、偏移量管理与死信处理，适用于接入业务系统实时事件流。'
+            },
+            {
+                id: 21, name: '邮件发送 SMTP', source: '第三方', emoji: '✉️', iconColor: 'gray',
+                description: '通过 SMTP 协议发送 HTML 正文、内嵌图片与附件邮件，支持 TLS 加密、抄送密送与发送结果回执，适用于告警与报告投递。'
+            },
+            {
+                id: 22, name: 'Elasticsearch 检索', source: '第三方', emoji: '🔍', iconColor: 'teal',
+                description: '对 Elasticsearch 索引执行全文检索、聚合统计与文档写入，支持高亮、分页、过滤条件与多索引联合查询。'
+            },
+            {
+                id: 23, name: '图像缺陷检测 SDK', source: '第三方', emoji: '📷', iconColor: 'orange',
+                description: '集成工业视觉算法包，对产线图像进行瑕疵检测与分类，输出缺陷类别、位置框、置信度与热力图，用于在线质检与返修判定。'
+            },
+            {
+                id: 24, name: 'SAP ERP 接口', source: '第三方', emoji: '📦', iconColor: 'green',
+                description: '对接 SAP 标准 BAPI、RFC 与 IDoc 接口，同步物料、订单、库存、生产计划等业务主数据，支持异步确认与错误重试。'
+            },
+            {
+                id: 25, name: 'Webhook 入站', source: '官方', emoji: '🔗', iconColor: 'blue',
+                description: '提供可配置的 HTTP 回调入口，接收外部系统推送的 JSON/表单数据并触发智能体流程，支持签名校验、IP 白名单与请求日志。'
+            },
+            {
+                id: 26, name: '阿里云短信', source: '第三方', emoji: '📲', iconColor: 'green',
+                description: '调用阿里云短信服务发送验证码、告警与通知类短信，支持模板变量、发送频率限制与回执状态查询，适用于运维告警与用户触达。'
+            },
+            {
+                id: 27, name: 'MQTT 设备订阅', source: '第三方', emoji: '📡', iconColor: 'teal',
+                description: '订阅 MQTT Broker 主题接收设备上报消息，支持 QoS、遗嘱消息与 TLS 连接，可将 IoT 遥测数据实时驱动智能体分析与响应。'
+            }
+        ].map(item => ({ ...item, ...COMPONENT_META[item.id] }));
+
+        /** 各 Tab 二级筛选配置 */
+        const FILTER_CONFIG = {
+            manufacturing: {
+                label: '场景类别',
+                tags: [
+                    '全部', '通用', '终端制造', '电子信息', '家电制造', '图纸设计',
+                    '智能排产', '工艺优化', '参数调优', '缺陷检测', '故障诊断',
+                    '预测维护', '安全监控', '能耗优化', '报表生成', '仓储调度'
+                ]
+            },
+            terminal: {
+                label: '终端类别',
+                tags: [
+                    '全部', '通用', '手机', '手表/手环', '潮玩', '音响', '智慧屏',
+                    '眼镜', 'PC', '扫地机', '耳机', '无人机', '门锁'
+                ]
+            },
+            other: {
+                label: '应用类别',
+                tags: [
+                    '全部', '通用', '数据分析', '知识管理', '流程协同', '研发设计',
+                    '客户服务', '供应链', '质量安全', '运维保障', '合规治理',
+                    '运营管理', '跨行业方案'
+                ]
+            }
+        };
+const app = createApp({
+            setup() {
+                const urlView = new URLSearchParams(location.search).get('view');
+                const activeView = ref(urlView === 'component' ? 'component' : 'agent');
+
+                const industryTabs = [
+                    { id: 'manufacturing', label: '生产制造' },
+                    { id: 'terminal', label: '终端产品' },
+                    { id: 'other', label: '其他' }
+                ];
+
+                const activeIndustry = ref('manufacturing');
+                const activeFilter = ref('全部');
+                const categoryTags = CATEGORY_TAGS;
+                const componentSearchKeyword = ref('');
+                const activeCategory = ref('全部');
+
+                const currentFilterConfig = computed(() =>
+                    FILTER_CONFIG[activeIndustry.value] || FILTER_CONFIG.manufacturing
+                );
+                const searchKeyword = ref('');
+                const publicScope = ref('');
+                const showFavoritesOnly = ref(false);
+                const agents = ref(AGENT_LIST.map(a => ({ ...a })));
+
+                const filteredAgents = computed(() => {
+                    let list = agents.value.filter(a => a.industryTab === activeIndustry.value);
+
+                    if (activeFilter.value !== '全部') {
+                        list = list.filter(a =>
+                            a.subCategory === activeFilter.value ||
+                            a.industry === activeFilter.value
+                        );
+                    }
+
+                    if (searchKeyword.value.trim()) {
+                        const kw = searchKeyword.value.trim().toLowerCase();
+                        list = list.filter(a => a.title.toLowerCase().includes(kw));
+                    }
+
+                    if (publicScope.value) {
+                        const scopeMap = {
+                            global: '全局公开',
+                            org: '组织内公开',
+                            private: '仅自己可见'
+                        };
+                        list = list.filter(a => a.scope === scopeMap[publicScope.value]);
+                    }
+
+                    if (showFavoritesOnly.value) {
+                        list = list.filter(a => a.favorited);
+                    }
+
+                    return list;
+                });
+
+                const filteredComponents = computed(() => {
+                    let list = COMPONENT_LIST;
+                    if (activeCategory.value !== '全部') {
+                        list = list.filter(c => c.category === activeCategory.value);
+                    }
+                    if (componentSearchKeyword.value.trim()) {
+                        const kw = componentSearchKeyword.value.trim().toLowerCase();
+                        list = list.filter(c =>
+                            c.name.toLowerCase().includes(kw) ||
+                            c.description.toLowerCase().includes(kw)
+                        );
+                    }
+                    return list;
+                });
+
+                function switchView(view) {
+                    activeView.value = view;
+                    const url = new URL(location.href);
+                    if (view === 'component') {
+                        url.searchParams.set('view', 'component');
+                    } else {
+                        url.searchParams.delete('view');
+                    }
+                    history.replaceState(null, '', url);
+                    nextTick(() => { if (window.lucide) lucide.createIcons(); });
+                }
+
+                function switchIndustry(tabId) {
+                    activeIndustry.value = tabId;
+                    activeFilter.value = '全部';
+                }
+
+                function toggleFavorite(agent) {
+                    agent.favorited = !agent.favorited;
+                }
+
+                function onCardClick(agent) {
+                    window.location.href = `智能体详情.html?id=${agent.id}`;
+                }
+
+                function onComponentClick(item) {
+                    window.location.href = `组件详情.html?id=${item.id}`;
+                }
+
+                onMounted(() => {
+                    nextTick(() => {
+                        if (window.lucide) lucide.createIcons();
+                    });
+                });
+
+                watch(activeView, () => {
+                    nextTick(() => { if (window.lucide) lucide.createIcons(); });
+                });
+
+                return {
+                    activeView,
+                    switchView,
+                    industryTabs,
+                    currentFilterConfig,
+                    activeIndustry,
+                    activeFilter,
+                    searchKeyword,
+                    publicScope,
+                    showFavoritesOnly,
+                    filteredAgents,
+                    categoryTags,
+                    componentSearchKeyword,
+                    activeCategory,
+                    filteredComponents,
+                    switchIndustry,
+                    toggleFavorite,
+                    onCardClick,
+                    onComponentClick,
+                    getAgentTypeClass: (type) => window.getAgentTypeClass(type),
+                    getScopeClass: (scope) => window.getScopeClass(scope)
+                };
+            }
+        });
+
+        for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
+            app.component(key, component);
+        }
+        app.use(ElementPlus, { locale: ElementPlusLocaleZhCn });
+        app.mount('#app');
+    </script>
+</body>
+</html>
