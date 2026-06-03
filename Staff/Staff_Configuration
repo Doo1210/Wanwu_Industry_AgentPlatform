@@ -1,0 +1,1450 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数字员工配置</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css" />
+    <script src="https://unpkg.com/element-plus"></script>
+    <script src="https://unpkg.com/@element-plus/icons-vue"></script>
+
+    <style>
+        :root { --brand-color: #3b82f6; }
+        body { font-family: "Inter", -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif; margin: 0; padding: 0; background-color: #f1f5f9; }
+        [v-cloak] { display: none; }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .terminal-scroll::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
+
+        /* ===== 配置模块卡片 ===== */
+        .module-card {
+            background-color: #ffffff;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 16px -4px rgba(15, 23, 42, 0.07), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
+            margin-bottom: 20px;
+            overflow: hidden;
+            position: relative;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .module-card:hover {
+            box-shadow: 0 10px 32px -6px rgba(15, 23, 42, 0.10), 0 4px 8px -4px rgba(15, 23, 42, 0.05);
+            border-color: #cbd5e1;
+        }
+        .module-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; bottom: 0;
+            width: 4px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .module-card.accent-blue::before { background: linear-gradient(180deg, #3b82f6, #60a5fa); opacity: 1; }
+        .module-card.accent-emerald::before { background: linear-gradient(180deg, #10b981, #34d399); opacity: 1; }
+        .module-card.accent-indigo::before { background: linear-gradient(180deg, #6366f1, #818cf8); opacity: 1; }
+        .module-card.accent-rose::before { background: linear-gradient(180deg, #f43f5e, #fb7185); opacity: 1; }
+
+        .module-header {
+            padding: 18px 24px 18px 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            user-select: none;
+            background-color: #ffffff;
+            transition: background-color 0.2s ease;
+            position: relative;
+            z-index: 10;
+        }
+        .module-header:hover { background-color: #f8fafc; }
+        .module-header.is-expanded { border-bottom: 1px solid #e2e8f0; }
+
+        .icon-toggle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 26px; height: 26px;
+            color: #94a3b8;
+            font-size: 13px;
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            transform: rotate(-90deg);
+        }
+        .icon-toggle-expanded { transform: rotate(0deg); }
+
+        .module-body {
+            padding: 18px 22px 22px 22px;
+            background-color: #fafbfc;
+        }
+
+        /* ===== 表单元素 ===== */
+        .form-label-simple {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: #475569;
+            margin-bottom: 6px;
+        }
+        .sub-card-simple {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 14px;
+            transition: all 0.2s ease;
+        }
+        .sub-card-simple:hover { border-color: #cbd5e1; }
+
+        .sop-card-simple {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+        .sop-card-simple:hover { border-color: #a5b4fc; background-color: #f5f3ff; }
+
+        /* ===== 工具卡片 ===== */
+        .tool-card {
+            background-color: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 12px 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            user-select: none;
+        }
+        .tool-card:hover { box-shadow: 0 4px 12px -3px rgba(15, 23, 42, 0.08); transform: translateY(-1px); }
+
+        /* ===== AI 按钮 ===== */
+        .ai-magic-btn {
+            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            border: none; color: white;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(99, 102, 241, 0.2);
+        }
+        .ai-magic-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 15px rgba(99, 102, 241, 0.3); color: white; }
+
+        /* ===== Element Plus 覆盖 ===== */
+        .el-input__wrapper, .el-select__wrapper { box-shadow: 0 0 0 1px #e2e8f0 inset !important; }
+        .el-input__wrapper:hover, .el-select__wrapper:hover { box-shadow: 0 0 0 1px #94a3b8 inset !important; }
+        .el-input__wrapper.is-focus, .el-select__wrapper.is-focus { box-shadow: 0 0 0 1px var(--brand-color) inset !important; }
+        
+        .el-dialog { border-radius: 18px !important; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.22) !important; }
+        .el-dialog__header {
+            border-bottom: 1px solid #e2e8f0;
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+        }
+        .el-dialog__title { font-weight: 700; color: #0f172a; font-size: 15px; }
+        .el-dialog__headerbtn {
+            position: static !important;
+            margin-left: auto;
+            width: 28px;
+            height: 28px;
+            top: unset !important;
+            right: unset !important;
+        }
+        .el-dialog__headerbtn .el-dialog__close {
+            font-size: 16px;
+            color: #94a3b8;
+        }
+        .el-dialog__headerbtn:hover .el-dialog__close { color: #475569; }
+        .el-dialog__footer { border-top: 1px solid #e2e8f0; padding: 12px 20px; }
+        /* 弹窗底部按钮统一样式 */
+        .el-dialog__footer .el-button--primary {
+            background-color: #3b82f6 !important;
+            border-color: #3b82f6 !important;
+            box-shadow: 0 4px 10px -2px rgba(59,130,246,0.35) !important;
+        }
+        .el-dialog__footer .el-button--primary:hover {
+            background-color: #2563eb !important;
+            border-color: #2563eb !important;
+        }
+        .el-dialog__footer .el-button:not(.el-button--primary) {
+            color: #475569 !important;
+            border-color: #e2e8f0 !important;
+        }
+        .el-dialog__footer .el-button:not(.el-button--primary):hover {
+            color: #1e293b !important;
+            border-color: #cbd5e1 !important;
+            background-color: #f8fafc !important;
+        }
+
+        .border-l-3 { border-left-width: 3px; }
+        .border-l-blue-500 { border-left-color: #3b82f6; }
+
+        .help-icon {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 16px; height: 16px; border-radius: 50%;
+            border: 1px solid #cbd5e1; font-size: 10px; font-weight: bold;
+            color: #94a3b8; cursor: help; line-height: 1; flex-shrink: 0;
+        }
+
+        /* ===== 调试面板消息样式 ===== */
+        .debug-msg-system {
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-size: 12px;
+            color: #64748b;
+            text-align: center;
+        }
+        .debug-msg-user {
+            display: flex;
+            justify-content: flex-end;
+        }
+        .debug-msg-user .bubble {
+            background: linear-gradient(135deg, #3b82f6, #6366f1);
+            color: white;
+            border-radius: 16px 16px 4px 16px;
+            padding: 10px 14px;
+            font-size: 13px;
+            max-width: 80%;
+            line-height: 1.5;
+        }
+        .debug-msg-tool {
+            background: #faf5ff;
+            border: 1px solid #e9d5ff;
+            border-left: 3px solid #a855f7;
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-family: 'Fira Code', 'Consolas', monospace;
+            font-size: 12px;
+            color: #7c3aed;
+            line-height: 1.6;
+        }
+        .debug-msg-assistant {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px 16px 16px 16px;
+            padding: 12px 14px;
+            font-size: 13px;
+            color: #1e293b;
+            line-height: 1.6;
+            box-shadow: 0 2px 8px -2px rgba(15,23,42,0.06);
+        }
+        .debug-msg-thinking {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #94a3b8;
+            font-size: 12px;
+            padding: 4px 0;
+        }
+        .thinking-dot {
+            width: 6px; height: 6px;
+            background: #94a3b8;
+            border-radius: 50%;
+            animation: thinking-bounce 1.2s infinite;
+        }
+        .thinking-dot:nth-child(2) { animation-delay: 0.2s; }
+        .thinking-dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes thinking-bounce {
+            0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+            40% { transform: translateY(-4px); opacity: 1; }
+        }
+
+        /* ===== 数值步进 ===== */
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type="number"] { -moz-appearance: textfield; }
+        .number-input-wrapper { position: relative; display: inline-block; }
+        .number-input-wrapper input { padding-right: 36px !important; }
+        .number-spin-buttons {
+            position: absolute; right: 4px; top: 50%;
+            transform: translateY(-50%);
+            display: flex; flex-direction: column; gap: 2px;
+        }
+        .number-spin-btn {
+            width: 24px; height: 12px;
+            border: none; background: #f1f5f9;
+            color: #64748b; font-size: 10px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 3px; transition: all 0.2s ease; padding: 0; line-height: 1;
+        }
+        .number-spin-btn:hover { background: #e2e8f0; color: #3b82f6; }
+        .number-spin-btn:active { background: #3b82f6; color: white; }
+        .number-spin-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .number-spin-btn:disabled:hover { background: #f1f5f9; color: #94a3b8; }
+
+        /* ===== 知识/工具 Tab ===== */
+        .knowledge-tabs .el-tabs__header { margin: 8px 0 12px 0; }
+        .knowledge-tabs .el-tabs__nav-wrap::after { display: none; }
+        .knowledge-tabs .el-tabs__item { padding: 0 14px; height: 32px; line-height: 32px; font-size: 13px; font-weight: 500; }
+        .knowledge-tabs .el-tabs__active-bar { height: 2px; background-color: #3b82f6; }
+
+        .animate-fade-in { animation: fadeIn 0.3s ease forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+        .cursor-blink { animation: blink 1s step-end infinite; }
+        @keyframes blink { 50% { opacity: 0; } }
+    </style>
+</head>
+<body id="app" v-cloak>
+
+    <!-- ===== 顶部 Header ===== -->
+    <header class="fixed top-0 left-0 right-0 h-14 bg-white border-b border-slate-200 z-50 flex items-center px-6" style="box-shadow: 0 2px 12px -2px rgba(15,23,42,0.08);">
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/25">
+                <el-icon class="text-white" style="font-size:18px;"><Avatar /></el-icon>
+            </div>
+            <div>
+                <div class="text-sm font-bold text-slate-800">{{ form.name || '未命名数字员工' }}</div>
+                <div class="text-xs font-medium" style="color:#10b981;">● 配置中</div>
+            </div>
+        </div>
+        <div class="ml-6 h-6 w-px bg-slate-200"></div>
+        <nav class="flex items-center gap-1 ml-4">
+            <a v-for="item in navItems" :key="item.id"
+               @click.prevent="scrollToSection(item.id)"
+               :class="['flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-all',
+                        activeSection === item.id ? 'bg-blue-50 text-blue-600' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700']">
+                <el-icon class="text-xs"><component :is="item.icon" /></el-icon>
+                {{ item.title }}
+            </a>
+        </nav>
+        <div class="ml-auto flex gap-2">
+            <el-button size="default" class="!rounded-lg !text-slate-600">取消</el-button>
+            <el-button type="primary" size="default" @click="saveConfig" class="!rounded-lg !shadow-lg" style="box-shadow:0 4px 12px -2px rgba(59,130,246,0.35);">
+                <el-icon class="mr-1"><Check /></el-icon>保存配置
+            </el-button>
+        </div>
+    </header>
+
+    <!-- ===== 主体两列布局 ===== -->
+    <div class="flex" style="padding-top: 56px; height: 100vh;">
+
+        <!-- 左列：配置表单 -->
+        <div ref="contentContainer" class="flex-1 overflow-y-auto terminal-scroll" style="padding: 24px 28px 40px 28px; min-width: 0;">
+
+            <!-- 基础配置 -->
+            <div id="section-profile" class="module-card accent-blue">
+                <div :class="['module-header', expandedSections.profile ? 'is-expanded' : '']" @click="toggleSection('profile')">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
+                            <el-icon class="text-blue-500" style="font-size:16px;"><User /></el-icon>
+                        </div>
+                        <div>
+                            <div class="text-sm font-bold text-slate-800">基础配置</div>
+                            <div class="text-xs text-slate-400 mt-0.5">员工名称、基座模型、职责描述</div>
+                        </div>
+                    </div>
+                    <span :class="['icon-toggle', expandedSections.profile ? 'icon-toggle-expanded' : '']">▼</span>
+                </div>
+                <div v-show="expandedSections.profile" class="module-body animate-fade-in">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="form-label-simple">员工名称</label>
+                            <el-input v-model="form.name" placeholder="例如：变压器异常诊断专家" size="large" class="!text-sm"></el-input>
+                        </div>
+                        <div>
+                            <label class="form-label-simple">基座模型</label>
+                            <div class="flex gap-2">
+                                <el-select v-model="form.model" size="large" class="flex-1">
+                                    <el-option label="Qwen-Max（推荐工业推理）" value="qwen"></el-option>
+                                    <el-option label="GPT-4o（全能旗舰）" value="gpt4"></el-option>
+                                </el-select>
+                                <el-button size="large" icon="Setting" class="!rounded-md text-slate-600" @click="openModelDialog">模型参数</el-button>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="form-label-simple">职责</label>
+                            <el-input v-model="form.responsibility" type="textarea" :rows="4"
+                                      placeholder="例如：你是一个严谨的电气工程师，主要负责一号车间的电气设备异常诊断..."
+                                      size="large" class="!text-sm"></el-input>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 知识与工具 -->
+            <div id="section-resources" class="module-card accent-emerald">
+                <div :class="['module-header', expandedSections.resources ? 'is-expanded' : '']" @click="toggleSection('resources')">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center">
+                            <el-icon class="text-emerald-500" style="font-size:16px;"><Box /></el-icon>
+                        </div>
+                        <div>
+                            <div class="text-sm font-bold text-slate-800">知识与工具</div>
+                            <div class="text-xs text-slate-400 mt-0.5">
+                                知识库 {{ form.knowledge.rag.length + form.knowledge.faq.length + form.knowledge.db.length }} 项 · 工具 {{ form.tools.length }} 项
+                            </div>
+                        </div>
+                    </div>
+                    <span :class="['icon-toggle', expandedSections.resources ? 'icon-toggle-expanded' : '']">▼</span>
+                </div>
+                <div v-show="expandedSections.resources" class="module-body space-y-5 animate-fade-in">
+                    <!-- 知识挂载 -->
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="text-sm font-bold text-slate-700">【知识挂载】</h3>
+                            <el-button size="small" icon="Plus" class="ai-magic-btn !text-xs" @click="openKnowledgeDialog">选择知识</el-button>
+                        </div>
+                        <div class="sub-card-simple space-y-3">
+                            <div v-if="form.knowledge.rag.length === 0 && form.knowledge.faq.length === 0 && form.knowledge.db.length === 0"
+                                 class="text-sm text-slate-400 italic text-center py-3">暂未挂载任何知识</div>
+                            <div v-if="form.knowledge.rag.length > 0" class="space-y-2">
+                                <div class="text-xs font-medium text-purple-600 flex items-center gap-1">
+                                    <el-icon class="text-xs"><Document /></el-icon> 知识库（文档）
+                                </div>
+                                <div class="grid grid-cols-2 gap-2">
+                                <div v-for="(kb, idx) in form.knowledge.rag" :key="'rag-'+idx"
+                                     class="flex items-center gap-2 py-2 px-3 bg-purple-50/50 rounded-lg border border-purple-200/50">
+                                    <span class="text-xs text-slate-700 flex-1 truncate">{{ kb }}</span>
+                                    <el-button size="small" icon="Close" link class="!text-slate-400 hover:!text-rose-500 flex-shrink-0" @click="removeKnowledge('rag', idx)"></el-button>
+                                </div>
+                                </div>
+                            </div>
+                            <div v-if="form.knowledge.faq.length > 0" class="space-y-2">
+                                <div class="text-xs font-medium text-amber-600 flex items-center gap-1">
+                                    <el-icon class="text-xs"><ChatDotRound /></el-icon> 问答库（FAQ）
+                                </div>
+                                <div class="grid grid-cols-2 gap-2">
+                                <div v-for="(faq, idx) in form.knowledge.faq" :key="'faq-'+idx"
+                                     class="flex items-center gap-2 py-2 px-3 bg-amber-50/50 rounded-lg border border-amber-200/50">
+                                    <span class="text-xs text-slate-700 flex-1 truncate">{{ faq }}</span>
+                                    <el-button size="small" icon="Close" link class="!text-slate-400 hover:!text-rose-500 flex-shrink-0" @click="removeKnowledge('faq', idx)"></el-button>
+                                </div>
+                                </div>
+                            </div>
+                            <div v-if="form.knowledge.db.length > 0" class="space-y-2">
+                                <div class="text-xs font-medium text-blue-600 flex items-center gap-1">
+                                    <el-icon class="text-xs"><Coin /></el-icon> 数据库（DB）
+                                </div>
+                                <div class="grid grid-cols-2 gap-2">
+                                <div v-for="(db, idx) in form.knowledge.db" :key="'db-'+idx"
+                                     class="flex items-center gap-2 py-2 px-3 bg-blue-50/50 rounded-lg border border-blue-200/50">
+                                    <span class="text-xs text-slate-700 flex-1 truncate">{{ db }}</span>
+                                    <el-button size="small" icon="Close" link class="!text-slate-400 hover:!text-rose-500 flex-shrink-0" @click="removeKnowledge('db', idx)"></el-button>
+                                </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- 工具发放 -->
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="text-sm font-bold text-slate-700">【工具发放】</h3>
+                            <el-button size="small" icon="Plus" class="ai-magic-btn !text-xs" @click="openToolDialog">选择工具</el-button>
+                        </div>
+                        <div class="sub-card-simple">
+                            <div v-if="form.tools.length === 0" class="text-sm text-slate-400 italic text-center py-3">暂未发放任何工具</div>
+                            <div v-else class="grid grid-cols-2 gap-2">
+                                <div v-for="(tool, idx) in form.tools" :key="'tool-'+idx"
+                                     class="flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-lg border border-slate-200">
+                                    <span class="text-sm text-slate-700 flex-1 truncate">{{ tool }}</span>
+                                    <el-button size="small" icon="Close" link class="!text-slate-400 hover:!text-rose-500 !p-0 flex-shrink-0" @click="removeTool(idx)"></el-button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 工作流程 -->
+            <div id="section-logic" class="module-card accent-indigo">
+                <div :class="['module-header', expandedSections.logic ? 'is-expanded' : '']" @click="toggleSection('logic')">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center">
+                            <el-icon class="text-indigo-500" style="font-size:16px;"><Connection /></el-icon>
+                        </div>
+                        <div>
+                            <div class="text-sm font-bold text-slate-800">工作流程</div>
+                            <div class="text-xs text-slate-400 mt-0.5">
+                                自主规划 {{ form.logic.allowExploration ? '开启' : '关闭' }} · SOP {{ form.sops.length }} 条
+                            </div>
+                        </div>
+                    </div>
+                    <span :class="['icon-toggle', expandedSections.logic ? 'icon-toggle-expanded' : '']">▼</span>
+                </div>
+                <div v-show="expandedSections.logic" class="module-body space-y-5 animate-fade-in">
+                    <!-- 自主规划 -->
+                    <div class="sub-card-simple">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <div class="text-sm font-bold text-slate-800 mb-1 flex items-center gap-2">
+                                    <div :class="['w-4 h-4 rounded-full border-2 transition-colors', form.logic.allowExploration ? 'bg-emerald-500 border-emerald-500' : 'bg-white border-slate-300']"></div>
+                                    自主规划开关
+                                </div>
+                                <div class="text-xs text-slate-500 mt-2 leading-relaxed">开启后，当无相关SOPs时，可自行规划、拆解任务并采取执行动作。</div>
+                            </div>
+                            <el-switch v-model="form.logic.allowExploration" size="large"></el-switch>
+                        </div>
+                    </div>
+                    <!-- 行为准则 -->
+                    <div class="sub-card-simple">
+                        <label class="form-label-simple flex items-center gap-1">
+                            行为准则
+                            <span class="help-icon" title="行为准则的要求会覆盖所有SOPs，SOP生成时会参考行为准则">?</span>
+                        </label>
+                        <el-input v-model="form.logic.behaviorGuidelines" type="textarea" :rows="3"
+                                  placeholder="例如：1. 始终优先保障人员安全；2. 执行控制操作前必须二次确认数据准确性..."
+                                  size="large" class="!text-sm"></el-input>
+                    </div>
+                    <!-- SOP 列表 -->
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="text-sm font-bold text-slate-700">【标准作业程序 (SOPs)】</h3>
+                            <el-button size="small" icon="Plus" class="ai-magic-btn !text-xs" @click="openSOPDialog">新增SOP</el-button>
+                        </div>
+                        <div class="space-y-3">
+                            <div v-if="form.sops.length === 0"
+                                 class="text-sm text-slate-400 italic text-center py-6 bg-slate-50 rounded-lg border border-dashed border-slate-300">
+                                暂无预设经验，点击上方按钮添加
+                            </div>
+                            <div v-for="(sop, idx) in form.sops" :key="sop.id" class="sop-card-simple p-3 group">
+                                <div class="flex items-start justify-between">
+                                    <div class="flex-1">
+                                        <div class="text-sm font-medium text-slate-700 mb-1">{{ sop.businessDesc }}</div>
+                                        <div class="flex flex-wrap gap-1.5 mt-1">
+                                            <span v-for="tool in sop.tools" :key="tool"
+                                                  class="inline-flex items-center px-2 py-0.5 bg-slate-100 text-slate-500 rounded text-xs">{{ tool }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="flex gap-1 ml-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <el-button size="small" icon="Edit" link class="!text-slate-400 hover:!text-blue-500" @click="openEditSOPDialog(idx)"></el-button>
+                                        <el-button size="small" icon="Delete" link class="!text-slate-400 hover:!text-rose-500" @click="executeDeleteSOP(idx)"></el-button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 安全管控 -->
+            <div id="section-safety" class="module-card accent-rose">
+                <div :class="['module-header', expandedSections.safety ? 'is-expanded' : '']" @click="toggleSection('safety')">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-rose-50 flex items-center justify-center">
+                            <el-icon class="text-rose-500" style="font-size:16px;"><Lock /></el-icon>
+                        </div>
+                        <div>
+                            <div class="text-sm font-bold text-slate-800">安全管控</div>
+                            <div class="text-xs text-slate-400 mt-0.5">安全红线 · 工具调用管控 {{ form.security.length }} 条</div>
+                        </div>
+                    </div>
+                    <span :class="['icon-toggle', expandedSections.safety ? 'icon-toggle-expanded' : '']">▼</span>
+                </div>
+                <div v-show="expandedSections.safety" class="module-body space-y-5 animate-fade-in">
+                    <div class="sub-card-simple" style="border-color:#fecaca; background:#fff5f5;">
+                        <label class="form-label-simple flex items-center gap-1" style="color:#b91c1c;">
+                            <el-icon class="text-base"><Warning /></el-icon> 安全红线
+                        </label>
+                        <el-input v-model="form.safetyRedLine" type="textarea" :rows="3"
+                                  placeholder="例如：1. 严禁在未确认人员安全的情况下执行设备启停操作..."
+                                  size="large" class="!text-sm"></el-input>
+                    </div>
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="text-sm font-bold text-slate-700">【工具调用管控】</h3>
+                            <el-button size="small" icon="Plus" class="ai-magic-btn !text-xs" @click="openSecurityDialog">添加管控</el-button>
+                        </div>
+                        <div v-if="form.security.length === 0"
+                             class="text-sm text-slate-400 italic text-center py-4 bg-slate-50 rounded-lg border border-dashed border-slate-300">
+                            暂无管控，所有工具可自由使用
+                        </div>
+                        <div v-else class="space-y-2">
+                            <div v-for="(sec, idx) in form.security" :key="idx"
+                                 class="sub-card-simple !p-3 flex items-center justify-between">
+                                <div class="flex items-center gap-3 flex-1">
+                                    <div class="w-7 h-7 rounded-lg bg-rose-100 text-rose-500 flex items-center justify-center">
+                                        <el-icon><Lock /></el-icon>
+                                    </div>
+                                    <div class="flex-1">
+                                        <div class="text-sm font-medium text-slate-700">{{ sec.tool }}</div>
+                                        <div class="text-xs text-slate-500 mt-0.5">
+                                            <template v-if="sec.config.mode === 'approval'">
+                                                <span class="text-amber-600 font-medium">审批拦截</span>
+                                                <span v-if="sec.config.notifyChannel"> → {{ sec.config.notifyChannel === 'wecom' ? '企业微信' : sec.config.notifyChannel === 'dingtalk' ? '钉钉' : '邮件' }}</span>
+                                            </template>
+                                            <template v-else-if="sec.config.mode === 'rule'">
+                                                <span class="text-blue-600 font-medium">规则限制</span>
+                                            </template>
+                                            <template v-else>
+                                                <span class="text-slate-500">直接放行</span>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </div>
+                                <el-button size="small" icon="Edit" link class="!text-slate-400 hover:!text-blue-500 mr-1" @click="openEditSecurityConfig(idx)"></el-button>
+                                <el-button size="small" icon="Close" link class="!text-slate-400 hover:!text-rose-500" @click="removeSecurityConfig(idx)"></el-button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- /左列 -->
+
+        <!-- 右列：调试面板 -->
+        <div class="flex-shrink-0 flex flex-col bg-white border-l border-slate-200" style="width: 520px; height: calc(100vh - 56px);">
+            <!-- 调试面板标题栏 -->
+            <div class="flex items-center justify-between px-4 py-3 border-b border-slate-100 flex-shrink-0">
+                <div class="flex items-center gap-2">
+                    <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-500 flex items-center justify-center">
+                        <el-icon class="text-white text-xs"><ChatLineRound /></el-icon>
+                    </div>
+                    <div>
+                        <div class="text-sm font-bold text-slate-800">调试面板</div>
+                        <div class="text-xs text-slate-400">测试数字员工响应效果</div>
+                    </div>
+                </div>
+                <el-button size="small" link class="!text-slate-400 hover:!text-slate-600 text-xs" @click="clearDebug">
+                    <el-icon class="mr-0.5"><Delete /></el-icon>清空
+                </el-button>
+            </div>
+
+            <!-- 消息列表 -->
+            <div ref="debugContainer" class="flex-1 overflow-y-auto terminal-scroll px-4 py-4 space-y-3">
+                <template v-for="(msg, idx) in debugMessages" :key="idx">
+                    <div v-if="msg.role === 'system'" class="debug-msg-system">{{ msg.content }}</div>
+                    <div v-else-if="msg.role === 'user'" class="debug-msg-user">
+                        <div class="bubble">{{ msg.content }}</div>
+                    </div>
+                    <div v-else-if="msg.role === 'tool'" class="debug-msg-tool">
+                        <div class="flex items-center gap-2 mb-1">
+                            <el-icon class="text-purple-500 text-xs"><Connection /></el-icon>
+                            <span class="text-xs font-bold text-purple-600">工具调用</span>
+                        </div>
+                        {{ msg.content }}
+                    </div>
+                    <div v-else-if="msg.role === 'thinking'" class="debug-msg-thinking">
+                        <div class="thinking-dot"></div>
+                        <div class="thinking-dot"></div>
+                        <div class="thinking-dot"></div>
+                        <span>{{ msg.content || '正在思考...' }}</span>
+                    </div>
+                    <div v-else-if="msg.role === 'assistant'" class="debug-msg-assistant">
+                        <div class="flex items-center gap-2 mb-2">
+                            <div class="w-5 h-5 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center">
+                                <el-icon class="text-white" style="font-size:10px;"><Avatar /></el-icon>
+                            </div>
+                            <span class="text-xs font-bold text-slate-600">{{ form.name || '数字员工' }}</span>
+                        </div>
+                        {{ msg.content }}
+                    </div>
+                </template>
+            </div>
+
+            <!-- 快捷场景 -->
+            <div class="px-4 py-2 border-t border-slate-100 flex-shrink-0">
+                <div class="text-xs text-slate-400 mb-2">快捷场景</div>
+                <div class="flex flex-wrap gap-1.5">
+                    <button v-for="scene in quickScenes" :key="scene"
+                            @click="sendQuickScene(scene)"
+                            class="text-xs px-2.5 py-1 bg-slate-50 hover:bg-blue-50 hover:text-blue-600 text-slate-600 border border-slate-200 hover:border-blue-300 rounded-full transition-all cursor-pointer">
+                        {{ scene }}
+                    </button>
+                </div>
+            </div>
+
+            <!-- 发送区 -->
+            <div class="px-4 py-3 border-t border-slate-200 flex-shrink-0">
+                <!-- 已附加文件 tag -->
+                <div v-if="attachedFile" class="flex items-center gap-2 mb-2">
+                    <div class="flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 border border-blue-200 rounded-full text-xs text-blue-700 max-w-full">
+                        <el-icon class="text-blue-500 flex-shrink-0"><Document /></el-icon>
+                        <span class="truncate" style="max-width:200px;">{{ attachedFile.name }}</span>
+                        <button @click="attachedFile = null" class="flex-shrink-0 text-blue-400 hover:text-blue-600 ml-0.5">
+                            <el-icon style="font-size:11px;"><Close /></el-icon>
+                        </button>
+                    </div>
+                </div>
+                <!-- 已附加事件数据 tag -->
+                <div v-if="attachedEventData" class="flex items-center gap-2 mb-2">
+                    <div class="flex items-center gap-1.5 px-2.5 py-1 bg-violet-50 border border-violet-200 rounded-full text-xs text-violet-700 max-w-full">
+                        <el-icon class="text-violet-500 flex-shrink-0"><Lightning /></el-icon>
+                        <span class="truncate" style="max-width:200px;">{{ attachedEventData.id }}</span>
+                        <span class="text-violet-400">{{ attachedEventData.timestamp }}</span>
+                        <button @click="attachedEventData = null" class="flex-shrink-0 text-violet-400 hover:text-violet-600 ml-0.5">
+                            <el-icon style="font-size:11px;"><Close /></el-icon>
+                        </button>
+                    </div>
+                </div>
+                <div class="flex gap-2 items-center">
+                    <!-- 选择文件按钮 -->
+                    <el-tooltip content="选择文件" placement="top">
+                        <button @click="triggerFileSelect"
+                                class="flex-shrink-0 w-9 h-9 rounded-lg border border-slate-200 bg-slate-50 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 text-slate-500 flex items-center justify-center transition-all">
+                            <el-icon style="font-size:16px;"><Paperclip /></el-icon>
+                        </button>
+                    </el-tooltip>
+                    <input ref="fileInputRef" type="file" class="hidden" @change="onFileSelected" />
+                    <!-- 选择事件数据按钮 -->
+                    <el-tooltip content="选择事件数据" placement="top">
+                        <button @click="showEventDataDialog = true"
+                                class="flex-shrink-0 w-9 h-9 rounded-lg border border-slate-200 bg-slate-50 hover:bg-violet-50 hover:border-violet-300 hover:text-violet-600 text-slate-500 flex items-center justify-center transition-all">
+                            <el-icon style="font-size:16px;"><Lightning /></el-icon>
+                        </button>
+                    </el-tooltip>
+                    <el-input
+                        v-model="debugInput"
+                        placeholder="模拟发送事件或指令..."
+                        size="large"
+                        class="flex-1"
+                        @keydown.enter.prevent="sendDebugMessage"
+                        :disabled="debugLoading">
+                    </el-input>
+                    <el-button
+                        type="primary"
+                        size="large"
+                        :loading="debugLoading"
+                        @click="sendDebugMessage"
+                        class="!rounded-lg flex-shrink-0"
+                        style="min-width:64px;">
+                        <el-icon v-if="!debugLoading"><Promotion /></el-icon>
+                    </el-button>
+                </div>
+            </div>
+        </div><!-- /右列 -->
+
+    </div><!-- /主体 -->
+
+    <!-- ===== 对话框：选择知识 ===== -->
+    <el-dialog v-model="showKnowledgeDialog" title="选择知识" width="600px">
+        <div class="space-y-3 py-3">
+            <el-input v-model="knowledgeSearch" placeholder="搜索知识库..." size="large" prefix-icon="Search" clearable class="!rounded-lg"></el-input>
+            <el-tabs v-model="knowledgeActiveTab" class="knowledge-tabs">
+                <el-tab-pane label="知识库（文档）" name="doc">
+                    <div class="space-y-2 max-h-72 overflow-y-auto pr-2 terminal-scroll">
+                        <div v-for="doc in filteredDocLibrary" :key="doc.id"
+                             @click="toggleKnowledgeSelect('rag', doc)"
+                             :class="['flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all',
+                                      isKnowledgeSelected('rag', doc) ? 'bg-purple-50/50 border-purple-300' : 'bg-white border-slate-200 hover:border-purple-300']">
+                            <div class="flex items-center gap-3">
+                                <div :class="['w-5 h-5 rounded border-2 flex items-center justify-center transition-colors',
+                                              isKnowledgeSelected('rag', doc) ? 'bg-purple-500 border-purple-500 text-white' : 'border-slate-300']">
+                                    <el-icon v-if="isKnowledgeSelected('rag', doc)" class="text-xs"><Check /></el-icon>
+                                </div>
+                                <span class="text-sm font-medium text-slate-700">{{ doc.name }}</span>
+                                <span class="text-xs text-slate-400">({{ doc.type }})</span>
+                            </div>
+                        </div>
+                    </div>
+                </el-tab-pane>
+                <el-tab-pane label="问答库（FAQ）" name="faq">
+                    <div class="space-y-2 max-h-72 overflow-y-auto pr-2 terminal-scroll">
+                        <div v-for="faq in faqLibrary" :key="faq.id"
+                             @click="toggleKnowledgeSelect('faq', faq)"
+                             :class="['flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all',
+                                      isKnowledgeSelected('faq', faq) ? 'bg-amber-50/50 border-amber-300' : 'bg-white border-slate-200 hover:border-amber-300']">
+                            <div class="flex items-center gap-3">
+                                <div :class="['w-5 h-5 rounded border-2 flex items-center justify-center transition-colors',
+                                              isKnowledgeSelected('faq', faq) ? 'bg-amber-500 border-amber-500 text-white' : 'border-slate-300']">
+                                    <el-icon v-if="isKnowledgeSelected('faq', faq)" class="text-xs"><Check /></el-icon>
+                                </div>
+                                <span class="text-sm font-medium text-slate-700">{{ faq.name }}</span>
+                                <span class="text-xs text-slate-400">({{ faq.count }}条)</span>
+                            </div>
+                        </div>
+                    </div>
+                </el-tab-pane>
+                <el-tab-pane label="数据库（DB）" name="db">
+                    <div class="space-y-2 max-h-72 overflow-y-auto pr-2 terminal-scroll">
+                        <div v-for="db in dbLibrary" :key="db.id"
+                             @click="toggleKnowledgeSelect('db', db)"
+                             :class="['flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all',
+                                      isKnowledgeSelected('db', db) ? 'bg-blue-50/50 border-blue-300' : 'bg-white border-slate-200 hover:border-blue-300']">
+                            <div class="flex items-center gap-3">
+                                <div :class="['w-5 h-5 rounded border-2 flex items-center justify-center transition-colors',
+                                              isKnowledgeSelected('db', db) ? 'bg-blue-500 border-blue-500 text-white' : 'border-slate-300']">
+                                    <el-icon v-if="isKnowledgeSelected('db', db)" class="text-xs"><Check /></el-icon>
+                                </div>
+                                <span class="text-sm font-medium text-slate-700">{{ db.name }}</span>
+                                <span class="text-xs text-slate-400">({{ db.type }})</span>
+                            </div>
+                        </div>
+                    </div>
+                </el-tab-pane>
+            </el-tabs>
+            <div class="text-sm text-slate-500">已选：<span class="text-blue-600 font-bold">{{ selectedKnowledgeCount }}</span> 项</div>
+        </div>
+        <template #footer>
+            <el-button @click="showKnowledgeDialog = false">取消</el-button>
+            <el-button type="primary" @click="showKnowledgeDialog = false">完成</el-button>
+        </template>
+    </el-dialog>
+
+    <!-- ===== 对话框：选择工具 ===== -->
+    <el-dialog v-model="showToolDialog" title="选择工具" width="600px">
+        <div class="space-y-3 py-3">
+            <el-input v-model="toolSearch" placeholder="搜索 API 或控制指令..." size="large" prefix-icon="Search" clearable></el-input>
+            <el-tabs v-model="activeToolTab" class="knowledge-tabs">
+                <el-tab-pane label="全部" name="all"></el-tab-pane>
+                <el-tab-pane label="组件" name="component"></el-tab-pane>
+                <el-tab-pane label="工作流" name="workflow"></el-tab-pane>
+                <el-tab-pane label="消息通知" name="notify"></el-tab-pane>
+            </el-tabs>
+            <div class="space-y-2 max-h-72 overflow-y-auto pr-2 terminal-scroll">
+                <div v-for="tool in filteredToolsByTab" :key="tool.id"
+                     @click="toggleToolSelect(tool)"
+                     :class="['flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all',
+                              getToolCardClass(tool)]">
+                    <div :class="['w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors',
+                                  isToolSelected(tool) ? getToolActiveColor(tool) : 'border-slate-300']">
+                        <el-icon v-if="isToolSelected(tool)" class="text-xs text-white"><Check /></el-icon>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <div class="text-sm font-medium text-slate-700 truncate">{{ tool.name }}</div>
+                        <div class="text-xs text-slate-400">{{ tool.protocol }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="text-sm text-slate-500">已选：<span class="text-blue-600 font-bold">{{ selectedToolCount }}</span> / {{ totalToolsCount }} 项</div>
+        </div>
+        <template #footer>
+            <el-button @click="showToolDialog = false">取消</el-button>
+            <el-button type="primary" @click="showToolDialog = false">完成</el-button>
+        </template>
+    </el-dialog>
+
+    <!-- ===== 对话框：新增/编辑 SOP ===== -->
+    <el-dialog v-model="showSOPDialog" :title="editingSOPIndex !== null ? '编辑SOP' : '新增SOP'" width="700px">
+        <div class="space-y-4 py-3">
+            <div>
+                <div class="flex items-center gap-2 mb-3">
+                    <el-icon class="text-amber-600"><Document /></el-icon>
+                    <span class="text-sm font-bold text-slate-700">经验描述</span>
+                </div>
+                <el-input v-model="sopDraft.businessDesc" type="textarea" :rows="5"
+                          placeholder="例如：当变压器油温超过85℃时，先查过去一小时的负载，如果正常就通知班长，如果负载也异常偏高，就立刻执行设备急停，并派发工单记录。"
+                          class="!text-sm" style="border-radius: 12px;"></el-input>
+            </div>
+            <div class="flex justify-center">
+                <el-button @click="compileSOP" :loading="sopDraft.loading"
+                           class="ai-magic-btn px-8 py-3 !rounded-full text-base font-bold shadow-xl">
+                    <el-icon class="mr-2 text-base"><MagicStick /></el-icon>
+                    AI 生成标准作业程序SOP
+                </el-button>
+            </div>
+            <div v-if="sopDraft.compiledPrompt" class="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden">
+                <div class="flex items-center gap-2 px-4 py-3 bg-slate-100 border-b border-slate-200">
+                    <el-icon class="text-indigo-600"><Cpu /></el-icon>
+                    <span class="text-sm font-bold text-slate-700">标准作业程序</span>
+                </div>
+                <div class="p-4 font-mono text-sm leading-relaxed text-slate-700 bg-white">
+                    <div v-for="(line, idx) in sopDraft.compiledPrompt.split('\n')" :key="idx" class="mb-1" v-html="highlightSOPLine(line)"></div>
+                </div>
+            </div>
+            <div v-if="sopDraft.autoTools.length > 0" class="flex items-start gap-2 text-xs text-slate-400">
+                <el-icon class="mt-0.5"><Link /></el-icon>
+                <div>
+                    <span class="font-medium text-slate-500">关联工具：</span>
+                    <span v-for="(tool, idx) in sopDraft.autoTools" :key="idx"
+                          class="inline-flex items-center px-3 py-1 bg-slate-100 rounded text-slate-600 mr-2 mb-1">{{ tool }}</span>
+                </div>
+            </div>
+        </div>
+        <template #footer>
+            <el-button @click="showSOPDialog = false">取消</el-button>
+            <el-button type="primary" @click="editingSOPIndex !== null ? updateSOP() : saveSOP()" :disabled="!sopDraft.compiledPrompt">完成</el-button>
+        </template>
+    </el-dialog>
+
+    <!-- ===== 对话框：工具调用管控 ===== -->
+    <el-dialog v-model="showSecurityDialog" :title="securityForm.index !== null ? '编辑管控' : '添加管控'" width="580px">
+        <div class="space-y-4 py-3">
+            <div>
+                <label class="form-label-simple">选择工具</label>
+                <el-select v-model="securityForm.tool" placeholder="从已开放工具中选择" class="w-full" size="large">
+                    <el-option v-for="tool in form.tools" :key="tool" :label="tool" :value="tool"></el-option>
+                </el-select>
+            </div>
+            <div>
+                <label class="form-label-simple">管控方式</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <div @click="securityForm.mode = 'rule'"
+                         :class="['p-3 rounded-lg border cursor-pointer transition-all text-center',
+                                  securityForm.mode === 'rule' ? 'bg-blue-50 border-blue-400' : 'bg-white border-slate-200 hover:border-slate-300']">
+                        <el-icon :class="['text-xl mb-1', securityForm.mode === 'rule' ? 'text-blue-500' : 'text-slate-400']"><Setting /></el-icon>
+                        <div :class="['text-sm font-medium', securityForm.mode === 'rule' ? 'text-blue-700' : 'text-slate-600']">规则限制</div>
+                        <div class="text-xs text-slate-400 mt-0.5">数值边界/频次熔断</div>
+                    </div>
+                    <div @click="securityForm.mode = 'approval'"
+                         :class="['p-3 rounded-lg border cursor-pointer transition-all text-center',
+                                  securityForm.mode === 'approval' ? 'bg-amber-50 border-amber-400' : 'bg-white border-slate-200 hover:border-slate-300']">
+                        <svg :class="['mb-1 mx-auto', securityForm.mode === 'approval' ? 'text-amber-500' : 'text-slate-400']" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 12C14.2091 12 16 10.2091 16 8C16 5.79086 14.2091 4 12 4C9.79086 4 8 5.79086 8 8C8 10.2091 9.79086 12 12 12Z" fill="currentColor"/>
+                            <path d="M12 14C9.33333 14 4 15.3333 4 18V20H20V18C20 15.3333 14.6667 14 12 14Z" fill="currentColor"/>
+                        </svg>
+                        <div :class="['text-sm font-medium', securityForm.mode === 'approval' ? 'text-amber-700' : 'text-slate-600']">人工确认</div>
+                        <div class="text-xs text-slate-400 mt-0.5">需要审批执行</div>
+                    </div>
+                </div>
+            </div>
+            <!-- 规则限制配置 -->
+            <div v-if="securityForm.mode === 'rule'" class="space-y-3">
+                <div class="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                    <div class="text-sm font-bold text-slate-700 mb-3 flex items-center justify-between">
+                        <span class="flex items-center gap-2"><el-icon class="text-indigo-500"><Finished /></el-icon>数值边界</span>
+                        <el-button size="small" type="primary" plain icon="Plus" @click="addValueBound">添加参数</el-button>
+                    </div>
+                    <div v-if="securityForm.valueBounds.length === 0" class="text-sm text-slate-400 italic text-center py-3">暂无数值边界</div>
+                    <div v-else class="space-y-2">
+                        <div v-for="(bound, idx) in securityForm.valueBounds" :key="idx" class="bg-white p-3 rounded-lg border border-slate-200">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-xs font-medium text-slate-600">参数 {{ idx + 1 }}</span>
+                                <el-button size="small" icon="Close" link class="!text-slate-400 hover:!text-rose-500 !p-0" @click="removeValueBound(idx)"></el-button>
+                            </div>
+                            <div class="grid grid-cols-3 gap-2">
+                                <el-input v-model="bound.paramName" size="small" placeholder="参数名"></el-input>
+                                <el-input v-model.number="bound.min" type="number" size="small" placeholder="Min"></el-input>
+                                <el-input v-model.number="bound.max" type="number" size="small" placeholder="Max"></el-input>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                    <div class="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
+                        <el-icon class="text-orange-500"><Timer /></el-icon>频次熔断
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-xs text-slate-500 mb-1.5 block">最大执行次数</label>
+                            <el-input v-model.number="securityForm.frequencyLimit.maxTimes" type="number" size="large" placeholder="10"></el-input>
+                        </div>
+                        <div>
+                            <label class="text-xs text-slate-500 mb-1.5 block">时间窗口</label>
+                            <div class="flex gap-2">
+                                <el-input v-model.number="securityForm.frequencyLimit.timeWindow" type="number" size="large" placeholder="60" class="flex-1"></el-input>
+                                <el-select v-model="securityForm.frequencyLimit.unit" size="large" style="width:80px;">
+                                    <el-option label="秒" value="秒"></el-option>
+                                    <el-option label="分钟" value="分钟"></el-option>
+                                    <el-option label="小时" value="小时"></el-option>
+                                </el-select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                    <div class="text-sm font-bold text-slate-700 mb-2">执行策略</div>
+                    <div class="space-y-2">
+                        <label class="flex items-start gap-2 cursor-pointer p-2 rounded-lg hover:bg-slate-100 transition-colors">
+                            <el-radio v-model="securityForm.violationStrategy" label="block" size="small" class="mt-0.5"></el-radio>
+                            <div>
+                                <div class="text-sm font-medium text-slate-700">拦截指令并反馈错误信息</div>
+                                <div class="text-xs text-slate-500 mt-0.5">强制停止执行，返回错误原因给数字员工进行重规划</div>
+                            </div>
+                        </label>
+                        <label class="flex items-start gap-2 cursor-pointer p-2 rounded-lg hover:bg-slate-100 transition-colors">
+                            <el-radio v-model="securityForm.violationStrategy" label="notify" size="small" class="mt-0.5"></el-radio>
+                            <div>
+                                <div class="text-sm font-medium text-slate-700">放行并通知管理员</div>
+                                <div class="text-xs text-slate-500 mt-0.5">允许执行但触发通知，用于审计和监控场景</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <!-- 人工确认配置 -->
+            <div v-if="securityForm.mode === 'approval'" class="space-y-3">
+                <div class="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                    <div class="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
+                        <svg class="text-blue-500" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 22C13.1 22 14 21.1 14 20H10C10 21.1 10.9 22 12 22ZM18 16V10C18 7.79 16.21 6 14 6H10C7.79 6 6 7.79 6 10V16L4 18V19H20V18L18 16Z" fill="currentColor"/>
+                        </svg>人工确认配置
+                    </div>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="text-xs text-slate-500 mb-2 block">通知方式</label>
+                            <div class="grid grid-cols-3 gap-2">
+                                <div @click="securityForm.notifyChannel = 'wecom'"
+                                     :class="['p-2.5 rounded-lg border cursor-pointer transition-all text-center',
+                                              securityForm.notifyChannel === 'wecom' ? 'bg-green-50 border-green-400' : 'bg-white border-slate-200 hover:border-slate-300']">
+                                    <div :class="['text-sm font-medium', securityForm.notifyChannel === 'wecom' ? 'text-green-700' : 'text-slate-600']">企业微信</div>
+                                </div>
+                                <div @click="securityForm.notifyChannel = 'dingtalk'"
+                                     :class="['p-2.5 rounded-lg border cursor-pointer transition-all text-center',
+                                              securityForm.notifyChannel === 'dingtalk' ? 'bg-blue-50 border-blue-400' : 'bg-white border-slate-200 hover:border-slate-300']">
+                                    <div :class="['text-sm font-medium', securityForm.notifyChannel === 'dingtalk' ? 'text-blue-700' : 'text-slate-600']">钉钉</div>
+                                </div>
+                                <div @click="securityForm.notifyChannel = 'email'"
+                                     :class="['p-2.5 rounded-lg border cursor-pointer transition-all text-center',
+                                              securityForm.notifyChannel === 'email' ? 'bg-purple-50 border-purple-400' : 'bg-white border-slate-200 hover:border-slate-300']">
+                                    <div :class="['text-sm font-medium', securityForm.notifyChannel === 'email' ? 'text-purple-700' : 'text-slate-600']">邮件</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-xs text-slate-500 mb-1.5 block">审批人</label>
+                            <el-input v-model="securityForm.approver" placeholder="请输入审批人账号或姓名" size="large"></el-input>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <template #footer>
+            <el-button @click="showSecurityDialog = false">取消</el-button>
+            <el-button type="primary" @click="securityForm.index !== null ? updateSecurityConfig() : saveSecurityConfig()" :disabled="!securityForm.tool">完成</el-button>
+        </template>
+    </el-dialog>
+
+    <!-- ===== 对话框：模型参数配置 ===== -->
+    <el-dialog v-model="showModelDialog" title="模型参数配置" width="480px">
+        <div class="space-y-1 py-3">
+            <div v-for="param in modelParams" :key="param.key"
+                 class="flex items-center justify-between px-2 py-3 border-b border-slate-100 last:border-0">
+                <div class="flex items-center gap-2">
+                    <span class="text-sm text-slate-600">{{ param.label }}</span>
+                    <el-tooltip :content="param.tip" placement="top">
+                        <span class="help-icon">?</span>
+                    </el-tooltip>
+                    <el-switch v-model="modelConfig[param.key + 'Enabled']" style="--el-switch-height: 18px; --el-switch-width: 32px;" />
+                </div>
+                <div class="number-input-wrapper">
+                    <input type="number" v-model.number="modelConfig[param.key]"
+                           :min="param.min" :max="param.max" :step="param.step"
+                           :disabled="!modelConfig[param.key + 'Enabled']"
+                           style="width:100px; height:32px; padding:4px 36px 4px 8px; border:1px solid #d1d5db; border-radius:6px; font-size:13px; text-align:right; outline:none;" />
+                    <div class="number-spin-buttons">
+                        <button type="button" class="number-spin-btn" @click="adjustValue(param.key, param.step, param.max)" :disabled="!modelConfig[param.key + 'Enabled']">▲</button>
+                        <button type="button" class="number-spin-btn" @click="adjustValue(param.key, -param.step, param.min)" :disabled="!modelConfig[param.key + 'Enabled']">▼</button>
+                    </div>
+                </div>
+            </div>
+            <!-- 思考过程 -->
+            <div class="flex items-center gap-2 px-2 py-3">
+                <span class="text-sm text-slate-600">思考过程</span>
+                <el-tooltip content="是否开启深度思考，关闭后将直接回答" placement="top">
+                    <span class="help-icon">?</span>
+                </el-tooltip>
+                <el-switch v-model="modelConfig.showThinking" style="--el-switch-height: 18px; --el-switch-width: 32px;" />
+            </div>
+        </div>
+        <template #footer>
+            <el-button @click="showModelDialog = false">取消</el-button>
+            <el-button type="primary" @click="showModelDialog = false">完成</el-button>
+        </template>
+    </el-dialog>
+
+    <script>
+        const { createApp, ref, computed, nextTick, watch } = Vue;
+        const app = createApp({
+            setup() {
+                // ===== 导航 =====
+                const contentContainer = ref(null);
+                const debugContainer = ref(null);
+                const activeSection = ref('section-profile');
+
+                const navItems = [
+                    { id: 'section-profile', title: '基础配置', icon: 'User' },
+                    { id: 'section-resources', title: '知识与工具', icon: 'Box' },
+                    { id: 'section-logic', title: '工作流程', icon: 'Connection' },
+                    { id: 'section-safety', title: '安全管控', icon: 'Lock' }
+                ];
+
+                const expandedSections = ref({
+                    profile: true,
+                    resources: true,
+                    logic: true,
+                    safety: true
+                });
+
+                const sectionKeyMap = {
+                    'section-profile': 'profile',
+                    'section-resources': 'resources',
+                    'section-logic': 'logic',
+                    'section-safety': 'safety'
+                };
+
+                const toggleSection = (key) => {
+                    expandedSections.value[key] = !expandedSections.value[key];
+                };
+
+                const scrollToSection = (sectionId) => {
+                    activeSection.value = sectionId;
+                    const key = sectionKeyMap[sectionId];
+                    if (key) expandedSections.value[key] = true;
+                    nextTick(() => {
+                        const el = document.getElementById(sectionId);
+                        if (el && contentContainer.value) {
+                            const container = contentContainer.value;
+                            const containerRect = container.getBoundingClientRect();
+                            const elRect = el.getBoundingClientRect();
+                            container.scrollTo({ top: container.scrollTop + elRect.top - containerRect.top - 8, behavior: 'smooth' });
+                        }
+                    });
+                };
+
+                // IntersectionObserver 联动导航
+                let observer = null;
+                const setupObserver = () => {
+                    if (observer) observer.disconnect();
+                    if (!contentContainer.value) return;
+                    observer = new IntersectionObserver((entries) => {
+                        const visible = entries.filter(e => e.isIntersecting);
+                        if (visible.length > 0) {
+                            visible.sort((a, b) => a.intersectionRatio - b.intersectionRatio);
+                            activeSection.value = visible[visible.length - 1].target.id;
+                        }
+                    }, { root: contentContainer.value, rootMargin: '-10% 0px -70% 0px', threshold: 0 });
+                    ['section-profile','section-resources','section-logic','section-safety'].forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) observer.observe(el);
+                    });
+                };
+
+                nextTick(() => setupObserver());
+
+                // ===== 表单数据 =====
+                const form = ref({
+                    name: '变压器异常诊断专家',
+                    model: 'qwen',
+                    responsibility: '你是一个严谨的电气工程师，主要负责一号车间的电气设备异常诊断，确保设备安全运行。',
+                    knowledge: {
+                        rag: ['《西门子变压器运维手册V2.pdf》', '《2023年历史故障代码库》'],
+                        faq: ['变压器常见故障处理50问'],
+                        db: ['设备运行台账数据库']
+                    },
+                    tools: [
+                        '[API] 读取实时遥测数据',
+                        '[DB] 查询历史台账与告警',
+                        '[Modbus] 设备急停/复位',
+                        '[OA] 派发维修工单',
+                        '[WeCom] 企业微信消息通知'
+                    ],
+                    safetyRedLine: '1. 严禁在未确认人员安全的情况下执行设备启停操作；2. 严禁超越权限执行高危操作；3. 发现重大安全隐患必须立即上报，不得擅自处理',
+                    security: [
+                        { tool: '[Modbus] 设备急停/复位', config: { mode: 'approval', notifyChannel: 'wecom', approver: 'li' } },
+                        { tool: '[WeCom] 企业微信消息通知', config: { mode: 'rule', valueBounds: [], frequencyLimit: { maxTimes: 1, timeWindow: 5, unit: '分钟' }, violationStrategy: 'block' } }
+                    ],
+                    logic: {
+                        allowExploration: true,
+                        behaviorGuidelines: '1. 始终优先保障人员安全；2. 执行控制操作前必须二次确认数据准确性；3. 重大决策需保留完整操作日志'
+                    },
+                    sops: [
+                        {
+                            id: 'sk_1',
+                            businessDesc: '当变压器油温超过85℃时，先查过去一小时的负载，如果正常就通知班长，如果负载也异常偏高，就立刻执行设备急停，并派发工单记录。',
+                            compiledPrompt: `[SCENARIO]: Event alarm_type == "High_Temperature" && > 85℃\n[LOGIC]:\n  1. CALL [读取实时遥测数据] to check load over past 1 hour.\n  2. IF load is NORMAL, CALL [企业微信消息通知] to shift lead.\n  3. IF load is HIGH, CALL [设备急停/复位] IMMEDIATELY and CALL [派发维修工单].`,
+                            tools: ['[读取实时遥测数据]', '[设备急停/复位]', '[企业微信消息通知]', '[派发维修工单]']
+                        }
+                    ]
+                });
+
+                // ===== 模型配置 =====
+                const showModelDialog = ref(false);
+                const modelConfig = ref({
+                    temperatureEnabled: true, temperature: 0.7,
+                    topPEnabled: true, topP: 1,
+                    frequencyPenaltyEnabled: true, frequencyPenalty: 0,
+                    presencePenaltyEnabled: true, presencePenalty: 0,
+                    maxTokensEnabled: true, maxTokens: 512,
+                    showThinking: true
+                });
+                const modelParams = [
+                    { key: 'temperature', label: '温度', tip: '增加温度将使模型的回答更具创造性', min: 0, max: 2, step: 0.1 },
+                    { key: 'topP', label: 'TopP', tip: '生成过程中核采样方法概率阈值。取值越大，生成的随机性越高', min: 0, max: 1, step: 0.05 },
+                    { key: 'frequencyPenalty', label: '频率惩罚', tip: '用于控制模型已使用字词的重复率', min: -2, max: 2, step: 0.1 },
+                    { key: 'presencePenalty', label: '存在惩罚', tip: '用于控制模型已使用字词的重复率', min: -2, max: 2, step: 0.1 },
+                    { key: 'maxTokens', label: '最大标记', tip: '模型回答的tokens的最大长度', min: 1, max: 198000, step: 1 }
+                ];
+                const adjustValue = (key, step, limit) => {
+                    const val = parseFloat((modelConfig.value[key] + step).toFixed(10));
+                    if (step > 0) modelConfig.value[key] = Math.min(val, limit);
+                    else modelConfig.value[key] = Math.max(val, limit);
+                };
+                const openModelDialog = () => { showModelDialog.value = true; };
+
+                // ===== 安全管控 =====
+                const showSecurityDialog = ref(false);
+                const securityForm = ref({
+                    index: null, tool: '', mode: 'rule', notifyChannel: 'wecom', approver: '',
+                    valueBounds: [], frequencyLimit: { maxTimes: null, timeWindow: 60, unit: '秒' }, violationStrategy: 'block'
+                });
+                const openSecurityDialog = () => {
+                    securityForm.value = { index: null, tool: '', mode: 'rule', notifyChannel: 'wecom', approver: '', valueBounds: [], frequencyLimit: { maxTimes: null, timeWindow: 60, unit: '秒' }, violationStrategy: 'block' };
+                    showSecurityDialog.value = true;
+                };
+                const openEditSecurityConfig = (index) => {
+                    const sec = form.value.security[index];
+                    securityForm.value = {
+                        index, tool: sec.tool, mode: sec.config.mode || 'rule',
+                        notifyChannel: sec.config.notifyChannel || 'wecom',
+                        approver: sec.config.approver || '',
+                        valueBounds: sec.config.valueBounds ? [...sec.config.valueBounds] : [],
+                        frequencyLimit: sec.config.frequencyLimit ? { ...sec.config.frequencyLimit } : { maxTimes: null, timeWindow: 60, unit: '秒' },
+                        violationStrategy: sec.config.violationStrategy || 'block'
+                    };
+                    showSecurityDialog.value = true;
+                };
+                const buildSecurityConfig = () => {
+                    const cfg = { mode: securityForm.value.mode };
+                    if (securityForm.value.mode === 'approval') {
+                        cfg.notifyChannel = securityForm.value.notifyChannel;
+                        cfg.approver = securityForm.value.approver;
+                    } else {
+                        cfg.valueBounds = securityForm.value.valueBounds;
+                        cfg.frequencyLimit = securityForm.value.frequencyLimit;
+                        cfg.violationStrategy = securityForm.value.violationStrategy;
+                    }
+                    return cfg;
+                };
+                const saveSecurityConfig = () => {
+                    if (!securityForm.value.tool) return;
+                    form.value.security.push({ tool: securityForm.value.tool, config: buildSecurityConfig() });
+                    showSecurityDialog.value = false;
+                };
+                const updateSecurityConfig = () => {
+                    if (!securityForm.value.tool || securityForm.value.index === null) return;
+                    form.value.security[securityForm.value.index] = { tool: securityForm.value.tool, config: buildSecurityConfig() };
+                    showSecurityDialog.value = false;
+                };
+                const removeSecurityConfig = (index) => { form.value.security.splice(index, 1); };
+                const addValueBound = () => { securityForm.value.valueBounds.push({ paramName: '', min: null, max: null }); };
+                const removeValueBound = (index) => { securityForm.value.valueBounds.splice(index, 1); };
+
+                // ===== 知识库 =====
+                const showKnowledgeDialog = ref(false);
+                const knowledgeSearch = ref('');
+                const knowledgeActiveTab = ref('doc');
+                const knowledgeLibrary = ref([
+                    { id: 1, name: '西门子变压器运维手册V2.pdf', type: 'PDF' },
+                    { id: 2, name: '2023年历史故障代码库', type: 'Excel' },
+                    { id: 3, name: '电气设备预防性维护指南', type: 'PDF' },
+                    { id: 4, name: '变电站安全操作规程', type: 'Word' }
+                ]);
+                const faqLibrary = ref([
+                    { id: 101, name: '变压器常见故障处理50问', count: 50 },
+                    { id: 102, name: '电力系统异常排查FAQ', count: 35 },
+                    { id: 103, name: '设备维护保养知识问答', count: 42 }
+                ]);
+                const dbLibrary = ref([
+                    { id: 201, name: '设备运行台账数据库', type: 'MySQL' },
+                    { id: 202, name: '历史告警记录库', type: 'PostgreSQL' },
+                    { id: 203, name: '人员操作日志数据库', type: 'MongoDB' }
+                ]);
+                const filteredDocLibrary = computed(() => {
+                    if (!knowledgeSearch.value) return knowledgeLibrary.value;
+                    return knowledgeLibrary.value.filter(d => d.name.toLowerCase().includes(knowledgeSearch.value.toLowerCase()));
+                });
+                const selectedKnowledgeCount = computed(() => form.value.knowledge.rag.length + form.value.knowledge.faq.length + form.value.knowledge.db.length);
+                const isKnowledgeSelected = (type, item) => {
+                    if (type === 'faq') return form.value.knowledge.faq.includes(item.name);
+                    if (type === 'db') return form.value.knowledge.db.includes(item.name);
+                    return form.value.knowledge.rag.includes(item.name);
+                };
+                const toggleKnowledgeSelect = (type, item) => {
+                    const arr = type === 'faq' ? form.value.knowledge.faq : type === 'db' ? form.value.knowledge.db : form.value.knowledge.rag;
+                    const idx = arr.indexOf(item.name);
+                    idx > -1 ? arr.splice(idx, 1) : arr.push(item.name);
+                };
+                const openKnowledgeDialog = () => { knowledgeSearch.value = ''; showKnowledgeDialog.value = true; };
+                const removeKnowledge = (type, index) => { form.value.knowledge[type].splice(index, 1); };
+
+                // ===== 工具库 =====
+                const showToolDialog = ref(false);
+                const toolSearch = ref('');
+                const activeToolTab = ref('all');
+                const toolLibrary = ref([
+                    { id: 1, name: '[API] 读取实时遥测数据', protocol: 'HTTP', type: 'read' },
+                    { id: 2, name: '[DB] 查询历史台账与告警', protocol: 'SQL', type: 'read' },
+                    { id: 3, name: '[Modbus] 设备急停/复位', protocol: 'Modbus', type: 'control' },
+                    { id: 4, name: '[OA] 派发维修工单', protocol: 'API', type: 'notify' },
+                    { id: 5, name: '[WeCom] 企业微信消息通知', protocol: 'Webhook', type: 'notify' },
+                    { id: 6, name: '[DingTalk] 钉钉消息通知', protocol: 'Webhook', type: 'notify' },
+                    { id: 7, name: '[API] 读取设备运行状态', protocol: 'HTTP', type: 'read' },
+                    { id: 8, name: '[Modbus] 远程启停控制', protocol: 'Modbus', type: 'control' },
+                    { id: 9, name: '[Workflow] 故障诊断处理流程', protocol: 'DAG', type: 'workflow' },
+                    { id: 10, name: '[Workflow] 设备巡检自动化流程', protocol: 'DAG', type: 'workflow' },
+                    { id: 11, name: '[MCP] 第三方数据分析服务', protocol: 'MCP', type: 'plugin' },
+                    { id: 12, name: '[MCP] 智能报表生成器', protocol: 'MCP', type: 'plugin' }
+                ]);
+                const filteredAllTools = computed(() => {
+                    if (!toolSearch.value) return toolLibrary.value;
+                    return toolLibrary.value.filter(t => t.name.toLowerCase().includes(toolSearch.value.toLowerCase()));
+                });
+                const filteredToolsByTab = computed(() => {
+                    let tools = filteredAllTools.value;
+                    if (activeToolTab.value === 'component') return tools.filter(t => ['read','control','plugin'].includes(t.type));
+                    if (activeToolTab.value !== 'all') return tools.filter(t => t.type === activeToolTab.value);
+                    return tools;
+                });
+                const getToolCardClass = (tool) => {
+                    const selected = isToolSelected(tool);
+                    const colors = { read: 'bg-emerald-50/50 border-emerald-300', control: 'bg-rose-50/50 border-rose-300', notify: 'bg-blue-50/50 border-blue-300', workflow: 'bg-cyan-50/50 border-cyan-300', plugin: 'bg-violet-50/50 border-violet-300' };
+                    const hoverColors = { read: 'hover:border-emerald-300', control: 'hover:border-rose-300', notify: 'hover:border-blue-300', workflow: 'hover:border-cyan-300', plugin: 'hover:border-violet-300' };
+                    return selected ? (colors[tool.type] || 'bg-blue-50/50 border-blue-300') : `bg-white border-slate-200 ${hoverColors[tool.type] || ''}`;
+                };
+                const getToolActiveColor = (tool) => {
+                    const colors = { read: 'bg-emerald-500 border-emerald-500', control: 'bg-rose-500 border-rose-500', notify: 'bg-blue-500 border-blue-500', workflow: 'bg-cyan-500 border-cyan-500', plugin: 'bg-violet-500 border-violet-500' };
+                    return colors[tool.type] || 'bg-blue-500 border-blue-500';
+                };
+                const selectedToolCount = computed(() => toolLibrary.value.filter(t => form.value.tools.includes(t.name)).length);
+                const totalToolsCount = computed(() => toolLibrary.value.length);
+                const isToolSelected = (tool) => form.value.tools.includes(tool.name);
+                const toggleToolSelect = (tool) => {
+                    const idx = form.value.tools.indexOf(tool.name);
+                    idx > -1 ? form.value.tools.splice(idx, 1) : form.value.tools.push(tool.name);
+                };
+                const openToolDialog = () => { toolSearch.value = ''; showToolDialog.value = true; };
+                const removeTool = (index) => { form.value.tools.splice(index, 1); };
+
+                // ===== SOP =====
+                const showSOPDialog = ref(false);
+                const editingSOPIndex = ref(null);
+                const sopDraft = ref({ businessDesc: '', compiledPrompt: '', autoTools: [], loading: false });
+
+                const compileSOP = async () => {
+                    if (!sopDraft.value.businessDesc) return;
+                    sopDraft.value.loading = true;
+                    await new Promise(r => setTimeout(r, 1500));
+                    const desc = sopDraft.value.businessDesc;
+                    if (desc.includes('油温') || desc.includes('温度')) {
+                        sopDraft.value.compiledPrompt = `[SCENARIO]: Event alarm_type includes "Temperature" && value > 85\n[LOGIC]:\n  1. CALL [读取实时遥测数据] to check load over past 1 hour.\n  2. IF load is NORMAL, CALL [企业微信消息通知] to shift lead.\n  3. IF load is HIGH, CALL [设备急停/复位] IMMEDIATELY and CALL [派发维修工单].`;
+                        sopDraft.value.autoTools = ['[读取实时遥测数据]', '[设备急停/复位]', '[企业微信消息通知]', '[派发维修工单]'];
+                    } else {
+                        sopDraft.value.compiledPrompt = `[SCENARIO]: Custom scenario from user input\n[LOGIC]:\n  1. Analyze the situation based on provided description.\n  2. Determine appropriate tools to use.\n  3. Execute actions as needed.`;
+                        sopDraft.value.autoTools = [];
+                    }
+                    sopDraft.value.loading = false;
+                };
+                const highlightSOPLine = (line) => {
+                    if (!line) return '';
+                    return line
+                        .replace(/\[([^\]]+)\]/g, '<span class="text-blue-600 font-bold">[$1]</span>')
+                        .replace(/(IF|ELSE|CALL)/g, '<span class="text-purple-600 font-bold">$1</span>');
+                };
+                const openSOPDialog = () => {
+                    sopDraft.value = { businessDesc: '', compiledPrompt: '', autoTools: [], loading: false };
+                    editingSOPIndex.value = null;
+                    showSOPDialog.value = true;
+                };
+                const saveSOP = () => {
+                    form.value.sops.push({ id: 'sk_' + Date.now(), businessDesc: sopDraft.value.businessDesc, compiledPrompt: sopDraft.value.compiledPrompt, tools: sopDraft.value.autoTools });
+                    showSOPDialog.value = false;
+                };
+                const openEditSOPDialog = (index) => {
+                    editingSOPIndex.value = index;
+                    const sop = form.value.sops[index];
+                    sopDraft.value = { businessDesc: sop.businessDesc, compiledPrompt: sop.compiledPrompt, autoTools: sop.tools || [], loading: false };
+                    showSOPDialog.value = true;
+                };
+                const updateSOP = () => {
+                    if (editingSOPIndex.value !== null) {
+                        form.value.sops[editingSOPIndex.value] = { ...form.value.sops[editingSOPIndex.value], businessDesc: sopDraft.value.businessDesc, compiledPrompt: sopDraft.value.compiledPrompt, tools: sopDraft.value.autoTools };
+                    }
+                    showSOPDialog.value = false;
+                };
+                const executeDeleteSOP = (index) => { form.value.sops.splice(index, 1); };
+
+                // ===== 调试面板 =====
+                const debugMessages = ref([]);
+                const debugInput = ref('');
+                const debugLoading = ref(false);
+
+                const quickScenes = [
+                    '变压器油温告警 87℃',
+                    '设备负载突然升高',
+                    '查询近1小时告警',
+                    '派发巡检工单'
+                ];
+
+                const scrollDebugToBottom = () => {
+                    nextTick(() => {
+                        if (debugContainer.value) {
+                            debugContainer.value.scrollTop = debugContainer.value.scrollHeight;
+                        }
+                    });
+                };
+
+                const sendDebugMessage = async () => {
+                    if (!debugInput.value.trim() || debugLoading.value) return;
+                    const userMsg = debugInput.value.trim();
+                    debugMessages.value.push({ role: 'user', content: userMsg });
+                    debugInput.value = '';
+                    debugLoading.value = true;
+                    scrollDebugToBottom();
+
+                    // 思考中
+                    debugMessages.value.push({ role: 'thinking', content: '正在分析事件...' });
+                    scrollDebugToBottom();
+                    await new Promise(r => setTimeout(r, 900));
+                    debugMessages.value.pop();
+
+                    // 工具调用
+                    if (userMsg.includes('油温') || userMsg.includes('温度') || userMsg.includes('告警')) {
+                        debugMessages.value.push({ role: 'tool', content: 'CALL [读取实时遥测数据]\n→ 油温: 87℃  负载: 92%  运行时长: 4.2h' });
+                        scrollDebugToBottom();
+                        await new Promise(r => setTimeout(r, 700));
+                        debugMessages.value.push({ role: 'tool', content: 'CALL [DB] 查询历史台账与告警\n→ 近1小时触发告警 3 次，负载持续偏高' });
+                        scrollDebugToBottom();
+                        await new Promise(r => setTimeout(r, 500));
+                        debugMessages.value.push({ role: 'assistant', content: '检测到变压器油温异常（87℃ > 85℃），同时负载持续偏高（92%），触发高危判定。\n\n已按SOP执行：\n① 发送企业微信告警通知至班长\n② 触发设备急停指令（等待人工审批确认）\n③ 创建维修工单 #WO-20240520-001' });
+                    } else if (userMsg.includes('工单') || userMsg.includes('巡检')) {
+                        debugMessages.value.push({ role: 'tool', content: 'CALL [OA] 派发维修工单\n→ 工单创建成功: #WO-' + Date.now().toString().slice(-6) });
+                        scrollDebugToBottom();
+                        await new Promise(r => setTimeout(r, 600));
+                        debugMessages.value.push({ role: 'assistant', content: '已成功派发巡检工单，工单号已生成。相关人员将收到通知。' });
+                    } else if (userMsg.includes('查询') || userMsg.includes('历史')) {
+                        debugMessages.value.push({ role: 'tool', content: 'CALL [DB] 查询历史台账与告警\n→ 返回近24小时记录 156 条，异常 12 条' });
+                        scrollDebugToBottom();
+                        await new Promise(r => setTimeout(r, 600));
+                        debugMessages.value.push({ role: 'assistant', content: '已查询历史台账，近24小时共记录 156 条运行数据，其中异常记录 12 条。主要集中在凌晨2点至4点负载高峰期。' });
+                    } else {
+                        debugMessages.value.push({ role: 'assistant', content: '我已收到您的指令。根据当前配置的工具和SOP，我将分析相关情况并给出处理建议。请提供更多具体信息以便我做出更准确的响应。' });
+                    }
+
+                    scrollDebugToBottom();
+                    debugLoading.value = false;
+                };
+
+                const sendQuickScene = (scene) => {
+                    debugInput.value = scene;
+                    sendDebugMessage();
+                };
+
+                const clearDebug = () => {
+                    debugMessages.value = [];
+                };
+
+                watch(debugMessages, scrollDebugToBottom, { deep: true });
+
+                // ===== 保存 =====
+                const saveConfig = () => {
+                    ElementPlus.ElMessage.success('配置保存成功！');
+                };
+
+                return {
+                    contentContainer, debugContainer,
+                    activeSection, navItems, scrollToSection,
+                    expandedSections, toggleSection,
+                    form, saveConfig,
+                    showModelDialog, modelConfig, modelParams, adjustValue, openModelDialog,
+                    showSecurityDialog, securityForm, openSecurityDialog, openEditSecurityConfig,
+                    saveSecurityConfig, updateSecurityConfig, removeSecurityConfig,
+                    addValueBound, removeValueBound,
+                    showKnowledgeDialog, knowledgeSearch, knowledgeActiveTab,
+                    knowledgeLibrary, faqLibrary, dbLibrary, filteredDocLibrary,
+                    selectedKnowledgeCount, isKnowledgeSelected, toggleKnowledgeSelect,
+                    openKnowledgeDialog, removeKnowledge,
+                    showToolDialog, toolSearch, activeToolTab,
+                    toolLibrary, filteredAllTools, filteredToolsByTab,
+                    selectedToolCount, totalToolsCount,
+                    isToolSelected, toggleToolSelect, getToolCardClass, getToolActiveColor,
+                    openToolDialog, removeTool,
+                    showSOPDialog, editingSOPIndex, sopDraft,
+                    compileSOP, highlightSOPLine,
+                    openSOPDialog, saveSOP, openEditSOPDialog, updateSOP, executeDeleteSOP,
+                    debugMessages, debugInput, debugLoading, quickScenes,
+                    sendDebugMessage, sendQuickScene, clearDebug
+                };
+            }
+        });
+        app.use(ElementPlus);
+        for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
+            app.component(key, component);
+        }
+        app.mount('#app');
+    </script>
+</body>
+</html>
