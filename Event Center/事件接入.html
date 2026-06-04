@@ -189,8 +189,7 @@
             font-weight: 600;
         }
         .webhook-auth-tag.none { background: #f1f5f9; color: #64748b; }
-        .webhook-auth-tag.hmac { background: #fef3c7; color: #b45309; }
-        .webhook-auth-tag.bearer { background: #ede9fe; color: #6d28d9; }
+        .webhook-auth-tag.api_key { background: #ede9fe; color: #6d28d9; }
     </style>
 </head>
 <body class="h-screen overflow-hidden">
@@ -583,38 +582,31 @@
                     <!-- WebHook 配置 -->
                     <div v-if="form.sourceType === 'WebHook'" class="space-y-6">
                         <h3 class="text-[15px] font-bold text-slate-800">Webhook 信息</h3>
-                        <div v-if="form.webhookPath">
-                            <label class="block text-sm text-slate-700 mb-2">Webhook URL</label>
-                            <div class="flex gap-2 items-stretch">
-                                <div class="relative w-[110px] shrink-0">
-                                    <select v-model="form.webhookMethod" title="请求方式" class="w-full appearance-none bg-slate-50/50 border border-slate-200 rounded-md px-3 py-2 text-sm text-slate-700 outline-none cursor-pointer focus:border-blue-500">
-                                        <option value="GET">GET</option>
-                                        <option value="POST">POST</option>
-                                        <option value="PUT">PUT</option>
-                                    </select>
-                                    <i data-lucide="chevron-down" class="w-4 h-4 absolute right-3 top-2.5 text-slate-400 pointer-events-none"></i>
-                                </div>
-                                <input type="text" readonly :value="getWebhookFullUrl(form.webhookPath)" title="回调地址" class="flex-1 min-w-0 bg-slate-50/50 border border-slate-200 rounded-md px-3 py-2 text-sm font-mono text-slate-700 outline-none cursor-not-allowed">
-                                <button type="button" @click="copyWebhookUrl(form.webhookPath)" class="shrink-0 px-3 py-2 text-xs font-medium text-blue-600 border border-slate-200 rounded-md hover:bg-blue-50 transition-colors bg-white">复制</button>
-                            </div>
-                            <p class="text-[11px] text-slate-400 mt-1">外部系统使用所选请求方式调用此 URL，即可触发本事件。</p>
-                        </div>
-                        <div>
-                            <label class="block text-sm text-slate-700 mb-2">安全设置</label>
-                            <div class="space-y-2">
-                                <label class="inline-flex items-center gap-2 cursor-pointer select-none">
-                                    <input type="checkbox" :checked="form.webhookAuthType === 'hmac'" @change="toggleWebhookSignature($event.target.checked)" class="rounded border-slate-300">
-                                    <span class="text-sm text-slate-700">签名校验</span>
-                                </label>
-                                <p class="text-[11px] text-slate-400" v-if="form.webhookAuthType === 'none'">适用于内网或测试环境，生产环境建议开启签名校验。</p>
-                                <template v-if="form.webhookAuthType === 'hmac'">
-                                    <div class="flex gap-2 items-center">
-                                        <input type="text" readonly :value="form.webhookSecret" class="flex-1 bg-slate-50/50 border border-slate-200 rounded-md px-3 py-2 text-sm font-mono outline-none cursor-not-allowed">
-                                        <button type="button" @click="copyText(form.webhookSecret)" class="shrink-0 px-3 py-2 text-xs font-medium text-blue-600 border border-slate-200 rounded-md hover:bg-blue-50 transition-colors bg-white">复制</button>
-                                        <button type="button" @click="resetWebhookSecret()" class="shrink-0 px-3 py-2 text-xs font-medium text-slate-600 border border-slate-200 rounded-md hover:bg-slate-50 transition-colors bg-white">重置</button>
+                        <div v-if="form.webhookPath" class="space-y-5">
+                            <div>
+                                <label class="block text-sm text-slate-700 mb-2">Webhook URL</label>
+                                <div class="flex gap-2 items-stretch">
+                                    <div class="relative w-[110px] shrink-0">
+                                        <select v-model="form.webhookMethod" title="请求方式" class="w-full appearance-none bg-slate-50/50 border border-slate-200 rounded-md px-3 py-2 text-sm text-slate-700 outline-none cursor-pointer focus:border-blue-500">
+                                            <option value="GET">GET</option>
+                                            <option value="POST">POST</option>
+                                            <option value="PUT">PUT</option>
+                                        </select>
+                                        <i data-lucide="chevron-down" class="w-4 h-4 absolute right-3 top-2.5 text-slate-400 pointer-events-none"></i>
                                     </div>
-                                    <p class="text-[11px] text-slate-400">开启签名校验后自动生成密钥，外部请求需在 Header 中携带签名，平台使用此密钥验签。</p>
-                                </template>
+                                    <input type="text" readonly :value="getWebhookFullUrl(form.webhookPath)" title="回调地址" class="flex-1 min-w-0 bg-slate-50/50 border border-slate-200 rounded-md px-3 py-2 text-sm font-mono text-slate-700 outline-none cursor-not-allowed">
+                                    <button type="button" @click="copyWebhookUrl(form.webhookPath)" class="shrink-0 px-3 py-2 text-xs font-medium text-blue-600 border border-slate-200 rounded-md hover:bg-blue-50 transition-colors bg-white">复制</button>
+                                </div>
+                                <p class="text-[11px] text-slate-400 mt-1">外部系统使用所选请求方式调用此 URL，即可触发本事件。</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm text-slate-700 mb-2">密钥</label>
+                                <div class="flex gap-2 items-center">
+                                    <input type="text" readonly :value="form.webhookApiKey" class="flex-1 bg-slate-50/50 border border-slate-200 rounded-md px-3 py-2 text-sm font-mono outline-none cursor-not-allowed">
+                                    <button type="button" @click="copyText(form.webhookApiKey)" class="shrink-0 px-3 py-2 text-xs font-medium text-blue-600 border border-slate-200 rounded-md hover:bg-blue-50 transition-colors bg-white">复制</button>
+                                    <button type="button" @click="resetWebhookApiKey()" class="shrink-0 px-3 py-2 text-xs font-medium text-slate-600 border border-slate-200 rounded-md hover:bg-slate-50 transition-colors bg-white">重置</button>
+                                </div>
+                                <p class="text-[11px] text-slate-400 mt-1">创建事件时自动生成，外部请求需在 Header 中携带：<code class="text-xs bg-slate-100 px-1 rounded">Authorization: Bearer &lt;密钥&gt;</code></p>
                             </div>
                         </div>
 
@@ -636,7 +628,7 @@
                         </div>
 
                         <div>
-                            <p class="text-[11px] text-slate-400 mb-4">声明外部请求中的业务参数，供平台解析引用。鉴权相关 Header（Authorization、签名等）由上方安全设置自动处理，无需在此重复声明。</p>
+                            <p class="text-[11px] text-slate-400 mb-4">声明外部请求中的业务参数，供平台解析引用。鉴权 Header（Authorization）由上方密钥自动处理，无需在此重复声明。</p>
 
                             <!-- Query Parameters -->
                             <div class="mb-5">
@@ -861,17 +853,15 @@
                     webhookPath: '',
                     webhookMethod: 'POST',
                     webhookContentType: 'application/json',
-                    webhookAuthType: 'none',
-                    webhookSecret: '',
-                    webhookHmacAlgorithm: 'sha256'
+                    webhookApiKey: ''
                 });
                 const ruleList = ref([
                     { id: 1, name: '电表电压过高告警订阅', type: 'Pulsar', status: true, triggerCount: 1256, showMore: false, config: { ip: '10.0.1.2:6650', topic: 'persistent://electricity/alert/' }, rules: ['电压预警', '电流异常'], agents: [] },
                     { id: 2, name: '每周五能耗巡检报表', type: 'Timer', status: true, triggerCount: 86, showMore: false, config: { cronDesc: '每周五 22:00:00' }, rules: [], agents: ['能耗巡检任务'] },
                     { id: 3, name: '每日早班开机状态确认', type: 'Timer', status: true, triggerCount: 342, showMore: false, config: { cronDesc: '每日 08:30:00' }, rules: ['设备状态检查'], agents: ['设备开机状态检查任务'] },
                     { id: 4, name: 'SMT贴片机停机信号订阅', type: 'Pulsar', status: false, triggerCount: 12, showMore: false, config: { ip: 'pulsar.factory.local:6650', topic: 'industrial/smt/stop_code' }, rules: [], agents: [] },
-                    { id: 5, name: 'GitHub 代码提交通知', type: 'WebHook', status: true, triggerCount: 56, showMore: false, config: { path: '/webhook/github/commit', method: 'POST', authType: 'hmac', contentType: 'application/json', hmacAlgorithm: 'sha256', secret: 'whsec_mock_github', queryParams: [], headerParams: [{ name: 'X-GitHub-Event', required: true }], bodyParams: [{ name: 'commit_id', type: 'string', required: true }, { name: 'author', type: 'string', required: false }, { name: 'message', type: 'string', required: false }] }, rules: ['代码审核'], agents: ['代码提交处理任务'] },
-                    { id: 6, name: '订单状态更新 WebHook', type: 'WebHook', status: true, triggerCount: 234, showMore: false, config: { path: '/webhook/orders/update', method: 'POST', authType: 'none', contentType: 'application/json', queryParams: [{ name: 'notify_type', type: 'string', required: false }], headerParams: [], bodyParams: [{ name: 'order_id', type: 'string', required: true }, { name: 'status', type: 'string', required: true }, { name: 'amount', type: 'number', required: false }] }, rules: ['订单处理'], agents: ['订单状态处理任务'] },
+                    { id: 5, name: 'GitHub 代码提交通知', type: 'WebHook', status: true, triggerCount: 56, showMore: false, config: { path: '/webhook/github/commit', method: 'POST', authType: 'api_key', contentType: 'application/json', apiKey: 'evt_mock_github', queryParams: [], headerParams: [{ name: 'X-GitHub-Event', required: true }], bodyParams: [{ name: 'commit_id', type: 'string', required: true }, { name: 'author', type: 'string', required: false }, { name: 'message', type: 'string', required: false }] }, rules: ['代码审核'], agents: ['代码提交处理任务'] },
+                    { id: 6, name: '订单状态更新 WebHook', type: 'WebHook', status: true, triggerCount: 234, showMore: false, config: { path: '/webhook/orders/update', method: 'POST', authType: 'api_key', contentType: 'application/json', apiKey: 'evt_mock_orders', queryParams: [{ name: 'notify_type', type: 'string', required: false }], headerParams: [], bodyParams: [{ name: 'order_id', type: 'string', required: true }, { name: 'status', type: 'string', required: true }, { name: 'amount', type: 'number', required: false }] }, rules: ['订单处理'], agents: ['订单状态处理任务'] },
                     { id: 7, name: '设备传感器数据流', type: 'Kafka', status: true, triggerCount: 1523, showMore: false, config: { bootstrapServers: 'kafka-broker-1:9092,kafka-broker-2:9092', topic: 'iot.sensor.data' }, rules: ['数据清洗', '异常检测'], agents: ['传感器数据处理任务'] }
                 ]);
                 const eventLogsData = {
@@ -912,15 +902,19 @@
                 };
                 const generateWebhookPath = (id) => `/webhook/evt_${id}_${Math.random().toString(36).slice(2, 8)}`;
                 const getNextEventId = () => ruleList.value.length > 0 ? Math.max(...ruleList.value.map(r => r.id)) + 1 : 1;
+                const ensureWebhookApiKey = () => {
+                    if (!form.value.webhookApiKey) generateWebhookApiKey();
+                };
                 const ensureWebhookPath = () => {
                     if (!form.value.webhookPath) {
                         const id = isEditMode.value && editingRuleId.value ? editingRuleId.value : getNextEventId();
                         form.value.webhookPath = generateWebhookPath(id);
                     }
+                    ensureWebhookApiKey();
                 };
                 const getWebhookFullUrl = (path) => path ? `${WEBHOOK_BASE_URL}${path}` : '';
                 const getAuthTypeLabel = (authType) => {
-                    if (authType === 'hmac') return '签名校验';
+                    if (authType === 'api_key' || authType === 'bearer' || authType === 'hmac') return '密钥';
                     return '无鉴权';
                 };
                 const copyText = async (text) => {
@@ -932,23 +926,12 @@
                     }
                 };
                 const copyWebhookUrl = (path) => copyText(getWebhookFullUrl(path));
-                const generateWebhookSecret = () => {
-                    form.value.webhookSecret = generateRandomToken('whsec');
+                const generateWebhookApiKey = () => {
+                    form.value.webhookApiKey = generateRandomToken('evt');
                 };
-                const resetWebhookSecret = () => {
-                    generateWebhookSecret();
+                const resetWebhookApiKey = () => {
+                    generateWebhookApiKey();
                     ElementPlus.ElMessage.success('密钥已重置');
-                };
-                const handleWebhookAuthChange = () => {
-                    if (form.value.webhookAuthType === 'hmac') {
-                        if (!form.value.webhookSecret) generateWebhookSecret();
-                    } else {
-                        form.value.webhookSecret = '';
-                    }
-                };
-                const toggleWebhookSignature = (enabled) => {
-                    form.value.webhookAuthType = enabled ? 'hmac' : 'none';
-                    handleWebhookAuthChange();
                 };
                 const normalizeQueryParams = (list) => list
                     .filter(p => p.name.trim())
@@ -975,9 +958,8 @@
                     form.value.webhookPath = config.path || '';
                     form.value.webhookMethod = ['GET', 'POST', 'PUT'].includes(config.method) ? config.method : 'POST';
                     form.value.webhookContentType = config.contentType || 'application/json';
-                    form.value.webhookAuthType = config.authType === 'bearer' ? 'none' : (config.authType || 'none');
-                    form.value.webhookHmacAlgorithm = config.hmacAlgorithm || 'sha256';
-                    form.value.webhookSecret = config.secret || '';
+                    form.value.webhookApiKey = config.apiKey || config.secret || '';
+                    if (!form.value.webhookApiKey) ensureWebhookApiKey();
                     form.value.queryParams = (config.queryParams || []).map(p => ({
                         name: p.name, type: p.type || 'string', required: !!p.required
                     }));
@@ -994,15 +976,12 @@
                         path,
                         method: form.value.webhookMethod,
                         contentType: form.value.webhookContentType,
-                        authType: form.value.webhookAuthType,
+                        authType: 'api_key',
+                        apiKey: form.value.webhookApiKey,
                         queryParams: normalizeQueryParams(form.value.queryParams),
                         headerParams: normalizeHeaderParams(form.value.headerParams),
                         bodyParams: normalizeBodyParams(form.value.bodyParams)
                     };
-                    if (form.value.webhookAuthType === 'hmac') {
-                        config.hmacAlgorithm = form.value.webhookHmacAlgorithm || 'sha256';
-                        config.secret = form.value.webhookSecret;
-                    }
                     return config;
                 };
                 const validateWebhookForm = () => {
@@ -1010,8 +989,8 @@
                         ElementPlus.ElMessage.warning('回调地址未生成，请重新选择 WebHook 类型');
                         return false;
                     }
-                    if (form.value.webhookAuthType === 'hmac' && !form.value.webhookSecret.trim()) {
-                        ElementPlus.ElMessage.warning('签名校验需要密钥，请点击重置生成');
+                    if (!form.value.webhookApiKey.trim()) {
+                        ElementPlus.ElMessage.warning('密钥未生成，请点击重置生成');
                         return false;
                     }
                     if (!validateParamList(form.value.queryParams, 'Query Parameters')) return false;
@@ -1088,9 +1067,7 @@
                         webhookPath: '',
                         webhookMethod: 'POST',
                         webhookContentType: 'application/json',
-                        webhookAuthType: 'none',
-                        webhookSecret: '',
-                        webhookHmacAlgorithm: 'sha256'
+                        webhookApiKey: ''
                     };
                     showPulsarToken.value = false;
                     showKafkaPassword.value = false;
@@ -1199,8 +1176,7 @@
                         ensureWebhookPath();
                     } else {
                         form.value.webhookPath = '';
-                        form.value.webhookSecret = '';
-                        form.value.webhookAuthType = 'none';
+                        form.value.webhookApiKey = '';
                     }
                 };
 
@@ -1221,7 +1197,7 @@
                     showPulsarToken, showKafkaPassword,
                     form, ruleList, currentEventLogs, filteredRuleList, currentPage, pageSize, pagedRuleList,
                     getWebhookFullUrl, getAuthTypeLabel, copyText, copyWebhookUrl,
-                    resetWebhookSecret, handleWebhookAuthChange, toggleWebhookSignature,
+                    resetWebhookApiKey,
                     openDrawer, openEditDrawer, openLogDrawer, openDeleteModal, confirmDelete,
                     resetForm, toggleDay, toggleMonthDay, addField, removeField,
                     addQueryParam, removeQueryParam, addHeaderParam, removeHeaderParam, addBodyParam, removeBodyParam,
